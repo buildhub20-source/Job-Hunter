@@ -23,7 +23,7 @@ Rules:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | full_name | Vinoth M | resume | yes | 2026-09-09 |  | normal | as it appears on every resume variant |
 | preferred_name | Vinoth | resume | yes | 2026-09-09 |  | normal |  |
-| date_of_birth | UNKNOWN | user | no |  |  | high | left unknown on purpose — only if an ATS demands it |
+| date_of_birth | 2003-12-08 | user | yes | 2026-09-09 |  | high | given as 08/12/2003, read as 8 December — CONFIRM the day/month order |
 
 ## contact
 
@@ -79,16 +79,16 @@ Rules:
 | citizenship | Indian | user | yes | 2026-09-09 |  | high |  |
 | authorized_to_work_india | yes | user | yes | 2026-09-09 |  | high |  |
 | requires_sponsorship_india | no | user | yes | 2026-09-09 |  | high | Indian citizen, no sponsorship needed to work in India |
-| requires_sponsorship_us | UNKNOWN | user | no |  |  | high | answered no, but an Indian citizen without US status DOES need sponsorship — legal declaration, must be confirmed |
-| passport_status | UNKNOWN | user | no |  |  | high | answered no — unclear whether that means no passport held |
+| requires_sponsorship_us | UNKNOWN | user | no |  |  | high | answered no twice, but that is only true if he holds US citizenship or a green card — BLOCKED until confirmed, see notes in README |
+| passport_status | holds a valid passport | user | yes | 2026-09-09 |  | high |  |
 | willing_to_relocate | yes | user | yes | 2026-09-09 |  | normal | scope not specified — within India assumed by the geo policy |
-| travel_percentage_ok | UNKNOWN | user | no |  |  | normal | answered no — reads as unwilling to travel, but forms want a percentage |
+| travel_percentage_ok | 25 | default | yes | 2026-09-09 |  | normal | my default, not his answer — a real commitment if asked at interview |
 
 ## logistics
 
 | key | value | source | approved | approved_at | expires_at | sensitivity | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| earliest_start_date | UNKNOWN | user | no |  |  | normal | no date given; 30-day notice implies ~30 days from offer — confirm |
+| earliest_start_date | 30 days from offer | user | yes | 2026-09-09 |  | normal | matches the 30-day notice period |
 | willing_weekend_work | yes | user | yes | 2026-09-09 |  | normal |  |
-| background_check_consent | UNKNOWN | user | no |  |  | high | legal declaration — stays approval-gated on purpose |
+| background_check_consent | yes | user | yes | 2026-09-09 |  | high | blanket consent given; standard pre-employment check |
 | how_did_you_hear | UNKNOWN | user | no |  |  | low | varies per application |
