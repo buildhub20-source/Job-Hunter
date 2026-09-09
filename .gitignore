@@ -8,3 +8,4 @@ evidence/
 screenshots/
 .playwright/
 .DS_Store
+_to_delete/
