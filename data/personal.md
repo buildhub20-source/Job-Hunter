@@ -76,19 +76,19 @@ Rules:
 
 | key | value | source | approved | approved_at | expires_at | sensitivity | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| citizenship | UNKNOWN | user | no |  |  | high | never inferred from location |
-| authorized_to_work_india | UNKNOWN | user | no |  |  | high |  |
-| requires_sponsorship_india | UNKNOWN | user | no |  |  | high | the classic ATS question — answer once, permanently |
-| requires_sponsorship_us | UNKNOWN | user | no |  |  | high |  |
-| passport_status | UNKNOWN | user | no |  |  | high |  |
-| willing_to_relocate | UNKNOWN | user | no |  |  | normal |  |
-| travel_percentage_ok | UNKNOWN | user | no |  |  | normal |  |
+| citizenship | Indian | user | yes | 2026-09-09 |  | high |  |
+| authorized_to_work_india | yes | user | yes | 2026-09-09 |  | high |  |
+| requires_sponsorship_india | no | user | yes | 2026-09-09 |  | high | Indian citizen, no sponsorship needed to work in India |
+| requires_sponsorship_us | UNKNOWN | user | no |  |  | high | answered no, but an Indian citizen without US status DOES need sponsorship — legal declaration, must be confirmed |
+| passport_status | UNKNOWN | user | no |  |  | high | answered no — unclear whether that means no passport held |
+| willing_to_relocate | yes | user | yes | 2026-09-09 |  | normal | scope not specified — within India assumed by the geo policy |
+| travel_percentage_ok | UNKNOWN | user | no |  |  | normal | answered no — reads as unwilling to travel, but forms want a percentage |
 
 ## logistics
 
 | key | value | source | approved | approved_at | expires_at | sensitivity | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| earliest_start_date | UNKNOWN | user | no |  |  | normal |  |
-| willing_weekend_work | UNKNOWN | user | no |  |  | normal |  |
+| earliest_start_date | UNKNOWN | user | no |  |  | normal | no date given; 30-day notice implies ~30 days from offer — confirm |
+| willing_weekend_work | yes | user | yes | 2026-09-09 |  | normal |  |
 | background_check_consent | UNKNOWN | user | no |  |  | high | legal declaration — stays approval-gated on purpose |
 | how_did_you_hear | UNKNOWN | user | no |  |  | low | varies per application |
