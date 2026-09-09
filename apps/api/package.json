@@ -16,6 +16,8 @@
     "@jobops/profile": "*",
     "@jobops/shared": "*",
     "@jobops/chat": "*",
-    "@jobops/approvals": "*"
+    "@jobops/approvals": "*",
+    "@jobops/adapters": "*",
+    "@jobops/discovery": "*"
   }
 }

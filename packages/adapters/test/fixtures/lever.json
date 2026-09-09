@@ -1,0 +1,23 @@
+[
+  {
+    "id": "b1e7c3a4-1111-4c2b-9f0a-000000000001",
+    "text": "Software Development Engineer",
+    "hostedUrl": "https://jobs.lever.co/acme/b1e7c3a4-1111-4c2b-9f0a-000000000001",
+    "applyUrl": "https://jobs.lever.co/acme/b1e7c3a4-1111-4c2b-9f0a-000000000001/apply",
+    "workplaceType": "hybrid",
+    "createdAt": 1756900000000,
+    "categories": { "location": "Bangalore", "team": "Engineering", "commitment": "Full-time" },
+    "descriptionPlain": "Build backend services. 1+ years of experience. Node.js, TypeScript, React, PostgreSQL.",
+    "lists": [
+      { "text": "Requirements", "content": "<ul><li>Experience with AWS Lambda</li><li>Familiarity with RAG and LLM tooling</li></ul>" }
+    ]
+  },
+  {
+    "id": "b1e7c3a4-2222-4c2b-9f0a-000000000002",
+    "text": "Engineering Intern",
+    "hostedUrl": "https://jobs.lever.co/acme/b1e7c3a4-2222-4c2b-9f0a-000000000002",
+    "workplaceType": "remote",
+    "categories": { "allLocations": ["Remote", "India"], "commitment": "Intern" },
+    "description": "<p>Internship for final year students.</p>"
+  }
+]

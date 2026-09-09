@@ -1,0 +1,32 @@
+{
+  "jobs": [
+    {
+      "id": 4567001,
+      "internal_job_id": 900001,
+      "requisition_id": "REQ-3121001",
+      "title": "Software Engineer I, Platform (Bengaluru)",
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/4567001?gh_src=abc&utm_source=li",
+      "location": { "name": "Bengaluru, India" },
+      "first_published": "2026-08-20T09:00:00Z",
+      "updated_at": "2026-09-01T09:00:00Z",
+      "content": "&lt;p&gt;We are hiring a backend engineer.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;2-4 years of experience building services&lt;/li&gt;&lt;li&gt;Strong Java, Spring Boot, PostgreSQL&lt;/li&gt;&lt;li&gt;AWS &amp;amp; Docker&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;We will not sponsor visas for this role.&lt;/p&gt;"
+    },
+    {
+      "id": 4567002,
+      "requisition_id": null,
+      "title": "Senior Staff Engineer",
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/4567002",
+      "offices": [{ "name": "Remote - India" }],
+      "content": "<p>Minimum 9 years experience. Kubernetes, Go.</p>"
+    },
+    {
+      "id": 4567003,
+      "requisition_id": "REQ-3121003",
+      "title": "Backend Engineer",
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/4567003",
+      "location": { "name": "Chennai, India" },
+      "content": "<p>Up to 3 years experience. C#, .NET Core, SQL Server, microservices. Compensation Rs 8-12 LPA.</p>"
+    },
+    { "id": 4567004, "title": "", "absolute_url": "https://boards.greenhouse.io/acme/jobs/4567004" }
+  ]
+}

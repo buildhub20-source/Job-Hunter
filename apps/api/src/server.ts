@@ -6,6 +6,7 @@ import { stateRoutes } from './routes/state.js';
 import { controlRoutes } from './routes/control.js';
 import { approvalRoutes } from './routes/approvals.js';
 import { chatRoutes } from './routes/chat.js';
+import { discoveryRoutes } from './routes/discovery.js';
 import { transport } from './transport.js';
 
 const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? 'info' } });
@@ -16,6 +17,7 @@ await app.register(stateRoutes);
 await app.register(controlRoutes);
 await app.register(approvalRoutes);
 await app.register(chatRoutes);
+await app.register(discoveryRoutes);
 
 try {
   await app.listen({ port: config.port, host: '0.0.0.0' });
