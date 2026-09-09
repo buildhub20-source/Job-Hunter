@@ -69,7 +69,7 @@ Rules:
 | key | value | source | approved | approved_at | expires_at | sensitivity | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | current_ctc | 500000 | user | yes | 2026-09-09 | 2027-03-31 | high | INR per annum (5.0 LPA) |
-| expected_ctc | 600000 | user | yes | 2026-09-09 | 2027-03-31 | high | stated as above 600000 — this is the floor, negotiate upward |
+| expected_ctc | 800000 | user | yes | 2026-09-09 | 2027-03-31 | high | 8 LPA ask (~60% hike on 5 LPA); walk-away floor is separate, see salary_floor policy |
 | salary_currency | INR | user | yes | 2026-09-09 |  | normal | INR per annum |
 
 ## work_authorization
