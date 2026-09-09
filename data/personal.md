@@ -47,8 +47,8 @@ Rules:
 | current_title | Associate Software Developer | resume | yes | 2026-09-09 | 2027-03-31 | normal |  |
 | employment_start_date | 2024-09 | resume | yes | 2026-09-09 |  | normal | Sep 2024 – present |
 | employment_location | Coimbatore, India | resume | yes | 2026-09-09 |  | normal |  |
-| total_experience_years | 2 | derived | no |  | 2027-03-31 | normal | Sep 2024 to now. CONFIRM — this field gates eligibility |
-| notice_period_days | UNKNOWN | user | no |  | 2027-03-31 | normal | asked by almost every Indian ATS |
+| total_experience_years | 2.2 | user | yes | 2026-09-09 | 2027-03-31 | normal | as of Sep 2026 |
+| notice_period_days | 30 | user | yes | 2026-09-09 | 2027-03-31 | normal | asked by almost every Indian ATS |
 | primary_stack | .NET Core, ASP.NET Core, Node.js, React, AWS, microservices | resume | yes | 2026-09-09 |  | normal |  |
 | secondary_skills | Azure OpenAI, RAG, multi-agent AI, pgvector, Java, Spring Boot, Python | resume | yes | 2026-09-09 |  | normal |  |
 | databases | PostgreSQL, SQL Server, MySQL | resume | yes | 2026-09-09 |  | normal |  |
@@ -68,9 +68,9 @@ Rules:
 
 | key | value | source | approved | approved_at | expires_at | sensitivity | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| current_ctc | UNKNOWN | user | no |  | 2027-03-31 | high | never auto-filled without an approved value |
-| expected_ctc | UNKNOWN | user | no |  | 2027-03-31 | high |  |
-| salary_currency | INR | derived | no |  |  | normal | confirm |
+| current_ctc | 500000 | user | yes | 2026-09-09 | 2027-03-31 | high | INR per annum (5.0 LPA) |
+| expected_ctc | 600000 | user | yes | 2026-09-09 | 2027-03-31 | high | stated as above 600000 — this is the floor, negotiate upward |
+| salary_currency | INR | user | yes | 2026-09-09 |  | normal | INR per annum |
 
 ## work_authorization
 
