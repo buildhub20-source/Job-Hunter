@@ -1,0 +1,29 @@
+{
+  "name": "jobops",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w @jobops/api\" \"npm run dev -w @jobops/dashboard\"",
+    "dev:api": "npm run dev -w @jobops/api",
+    "dev:dashboard": "npm run dev -w @jobops/dashboard",
+    "db:up": "docker compose up -d postgres",
+    "db:migrate": "npm run migrate -w @jobops/db",
+    "db:reset": "npm run reset -w @jobops/db",
+    "profile:check": "npm run check -w @jobops/profile",
+    "test": "node --import tsx --test packages/*/test/*.test.ts"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.1",
+    "@types/node": "^22.7.5"
+  }
+}

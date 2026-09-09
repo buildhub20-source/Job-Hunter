@@ -1,0 +1,13 @@
+{
+  "name": "@jobops/profile",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "check": "tsx src/cli.ts check",
+    "show": "tsx src/cli.ts show",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": { "zod": "^3.23.8", "dotenv": "^16.4.5" }
+}
