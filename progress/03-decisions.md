@@ -2,11 +2,12 @@
 
 Why things are the way they are, so they don't get relitigated. Newest last.
 
-### D1 — The subject is Vinoth, not Prasath
-The agent runs **Vinoth M's** job search. `data/personal.md` describes him, applications
-go out under his name, email and phone, and the inbox worker must scan **his** mailbox
-(`gopir525@gmail.com`). Vinoth has agreed to this and will answer his own approval cards.
-Aptean is excluded from targeting — both of them work there.
+### D1 — The subject is Vinoth, not the operator
+The agent runs **Vinoth M's** job search, built and operated by someone else on his
+behalf. `data/personal.md` describes him, applications go out under his name, email
+and phone, and the inbox worker must scan **his** mailbox (`gopir525@gmail.com`).
+Vinoth has agreed to this and will answer his own approval cards. Aptean is excluded
+from targeting — both of them work there.
 
 ### D2 — Personal data in markdown, never in the database
 `personal.md` and the policy files are the only home for human-authored facts. Postgres
@@ -33,7 +34,7 @@ against Google's certs, or a shared secret locally. With neither configured it r
 every request rather than running open.
 
 ### D7 — Autonomous submission, with a recommendation attached
-Prasath asked for the agent to submit by itself and involve a human only when stuck.
+The operator asked for the agent to submit by itself and involve a human only when stuck.
 Recorded, and it's a config flag. The standing recommendation is to run the **first ten
 assisted** anyway: live submissions are where form-mapping bugs surface, and a bad
 submission can't be recalled — it reaches a real employer under Vinoth's name.
@@ -68,22 +69,22 @@ personal hardware.
 ### D13 — The GitHub remote is public, on purpose
 Pushed to `github.com/buildhub20-source/Job-Hunter` 2026-09-10. Set private first, since
 `data/personal.md` (Vinoth's DOB, phone, salary, citizenship) is in the committed
-history and a public repo exposes all of it, not just the current file. Prasath then
-switched it to public and, after being told explicitly what that exposes, confirmed it
-as intentional. Left as public; not something to "fix" back to private on a future pass
-unless he says otherwise.
+history and a public repo exposes all of it, not just the current file. The operator
+then switched it to public and, after being told explicitly what that exposes,
+confirmed it as intentional. Left as public; not something to "fix" back to private
+on a future pass unless told otherwise.
 
 ### D14 — The evaluator's stage-2 LLM call runs on Pro/Max, not a paid API key
-The Anthropic Console API key Prasath generated has a zero credit balance (needs
+The Anthropic Console API key the operator generated has a zero credit balance (needs
 billing set up, never done). Rather than wait on that, stage 2 shells out to the
-`@anthropic-ai/claude-code` CLI headless (`-p`), authenticated with Prasath's own
+`@anthropic-ai/claude-code` CLI headless (`-p`), authenticated with the operator's own
 Claude Pro/Max login instead of API billing.
 
 Flagged before building this way: it spends the same session/weekly quota as everyday
 interactive use (no separate charge), and it's a different use case than a Pro/Max
 subscription is meant for — a backend service calling it unattended, not a person
-coding interactively. Prasath chose it anyway, explicitly, after that tradeoff was put
-to him. Not a decision to quietly revisit; if the API key gets funded later, switching
+coding interactively. The operator chose it anyway, explicitly, after that tradeoff was
+put to them. Not a decision to quietly revisit; if the API key gets funded later, switching
 stage 2 back to direct API calls is a contained change in `packages/evaluator/src/llm.ts`
 only.
 

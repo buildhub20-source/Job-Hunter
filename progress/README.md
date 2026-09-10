@@ -20,7 +20,7 @@ Steps 0, 8, and 9 are all built. Discovery has put 125 real jobs in the database
 evaluator (hard gates + LLM ranking) has judged them; the inbox worker (classification +
 matching) is code-complete and unit-tested but has never touched real Gmail — see
 [01-completed.md](01-completed.md). Both LLM stages share one mechanism
-(`@jobops/llm`): the Claude Code CLI on Prasath's own Pro/Max login, not a paid API key
+(`@jobops/llm`): the Claude Code CLI on the operator's own Pro/Max login, not a paid API key
 — see D14 in [03-decisions.md](03-decisions.md).
 
 Next real work is wiring up real Google Chat and Gmail — both blocked on the same

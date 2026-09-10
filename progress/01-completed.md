@@ -89,7 +89,7 @@ order, first failure wins as the SKIP reason. Resume variant selection
 (`employer_override_then_default`) is a deterministic lookup, not asked of the model.
 Stage 2 LLM ranking runs against real DISCOVERED jobs via `POST /api/evaluate/run`.
 
-**The LLM call runs on Prasath's Claude Pro/Max login via the Claude Code CLI, not a
+**The LLM call runs on the operator's Claude Pro/Max login via the Claude Code CLI, not a
 paid API key** — the generated API key has no credit balance. See D14 in
 [03-decisions.md](03-decisions.md) for the tradeoff that was flagged and accepted, and
 three real bugs found building this: a permission-classifier block from flags that
@@ -148,7 +148,7 @@ email into a posting yet.
 - ✅ `POST /api/inbox/scan` registered and fails with a clear, specific error
   (`GMAIL_OAUTH_CLIENT_PATH is not set`) rather than crashing — proves the wiring
   without live credentials.
-- ❌ Never run against real Gmail. Needs a Google Cloud OAuth client from Prasath, and
+- ❌ Never run against real Gmail. Needs a Google Cloud OAuth client from the operator, and
   the one-time interactive consent (`npm run authorize -w @jobops/inbox`) has to happen
   on **Vinoth's own machine**, not this one — it's his Gmail login, see D12. See
   [04-open-items.md](04-open-items.md) for the full checklist, shared with Google Chat's.

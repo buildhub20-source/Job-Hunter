@@ -216,7 +216,7 @@ Before filling:
 5. Identify unknown fields → post approval cards to Google Chat.
 6. Only then fill.
 
-**Assisted mode is the default for v1:** the agent fills and stops; Prasath reviews and submits. Auto-submit is unlocked per-ATS only after assisted runs prove reliable.
+**Assisted mode is the default for v1:** the agent fills and stops; the operator reviews and submits. Auto-submit is unlocked per-ATS only after assisted runs prove reliable.
 
 Never invent an answer. When uncertain: do not submit, do not retry, do not guess — ask in chat and move on.
 
