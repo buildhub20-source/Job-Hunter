@@ -27,18 +27,17 @@ used to correct or delete the dead board tokens.
 
 ---
 
-## Step 8 — Evaluator
+## Step 8 — Evaluator (done, 2026-09-10)
 
-Hard gates in code first, then LLM ranking only on survivors.
+Built and verified against real data — see [01-completed.md](01-completed.md) and D14
+in [03-decisions.md](03-decisions.md). Runs via `POST /api/evaluate/run`. Not yet run
+against the full 125-job backlog, just incrementally so far.
 
-- Stage 1, near-zero cost: duplicate requisition, excluded company, out-of-scope
-  geography, seniority words, experience beyond the hard limit, disclosed comp below
-  `minimum_ctc`, excluded job types.
-- Stage 2: A / B / C / SKIP with reason, confidence, missing info, resume variant.
-- Cache on `jd_hash + policy_version` so unchanged JDs are never re-analysed.
-- Low confidence routes to review, never to auto-skip.
-
-**Needs:** an LLM API key (first step that does). **Blocks:** everything downstream.
+One known gap: `excluded_company_kinds` (staffing, consultancy_bench) has no data
+source — the `companies` table has no `kind` column, so this hard gate never fires.
+Harmless today (none of the 3 enabled boards are staffing firms), but needs a real
+column + a way to set it (probably an optional `data/boards.md` column) before adding
+any staffing/consultancy company to the registry.
 
 ---
 

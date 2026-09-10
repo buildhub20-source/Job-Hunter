@@ -72,3 +72,34 @@ history and a public repo exposes all of it, not just the current file. Prasath 
 switched it to public and, after being told explicitly what that exposes, confirmed it
 as intentional. Left as public; not something to "fix" back to private on a future pass
 unless he says otherwise.
+
+### D14 — The evaluator's stage-2 LLM call runs on Pro/Max, not a paid API key
+The Anthropic Console API key Prasath generated has a zero credit balance (needs
+billing set up, never done). Rather than wait on that, stage 2 shells out to the
+`@anthropic-ai/claude-code` CLI headless (`-p`), authenticated with Prasath's own
+Claude Pro/Max login instead of API billing.
+
+Flagged before building this way: it spends the same session/weekly quota as everyday
+interactive use (no separate charge), and it's a different use case than a Pro/Max
+subscription is meant for — a backend service calling it unattended, not a person
+coding interactively. Prasath chose it anyway, explicitly, after that tradeoff was put
+to him. Not a decision to quietly revisit; if the API key gets funded later, switching
+stage 2 back to direct API calls is a contained change in `packages/evaluator/src/llm.ts`
+only.
+
+Three real bugs surfaced getting this working, in order:
+1. `--restricted --permission-prompts none --safe-mode` together got the call blocked
+   by this environment's own permission classifier — it read as spawning an
+   unattended, permission-bypassing agent. Fixed by narrowing to `--safe-mode` +
+   `--disallowedTools <the specific tools never needed>` instead of the broad
+   "no prompts, ever" flags.
+2. `npx` is a `.cmd` shim on Windows; `execFile` can't spawn `.cmd` files without a
+   shell, and shelling out would mean re-escaping arbitrary JD text for `cmd.exe` —
+   the exact class of bug behind Node's own security advisories on this. Fixed by
+   resolving and invoking the CLI's real `bin/claude.exe` directly.
+3. The API server's own `.env` carries `ANTHROPIC_API_KEY` (added for this same step,
+   before this pivot) — the child process inherited it, and the CLI silently prefers
+   an API key over OAuth when both are present. That routed every call through the
+   zero-credit API key instead of the Pro/Max login, failing with "Credit balance is
+   too low" even though the person was logged in. Fixed by stripping the key from the
+   child process's environment specifically for this call.

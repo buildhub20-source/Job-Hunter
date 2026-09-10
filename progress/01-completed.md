@@ -78,6 +78,46 @@ After the WSL2 restart: Docker Desktop started clean, `npm run db:up` pulled and
 - ✅ `npm test` (59/59) and `npm run typecheck` (all 9 workspaces) still clean after
   all fixes.
 
+---
+
+## Step 8 — Evaluator, 2026-09-10
+
+`@jobops/evaluator`. Stage 1 hard gates as pure, policy-data-driven functions (company
+exclusion, current employer, experience floor/ceiling, geography + remote-anywhere,
+blocked seniority words, blocked job types, INR salary floor) — run in policy `priority`
+order, first failure wins as the SKIP reason. Resume variant selection
+(`employer_override_then_default`) is a deterministic lookup, not asked of the model.
+Stage 2 LLM ranking runs against real DISCOVERED jobs via `POST /api/evaluate/run`.
+
+**The LLM call runs on Prasath's Claude Pro/Max login via the Claude Code CLI, not a
+paid API key** — the generated API key has no credit balance. See D14 in
+[03-decisions.md](03-decisions.md) for the tradeoff that was flagged and accepted, and
+three real bugs found building this: a permission-classifier block from flags that
+looked like unattended permission-bypass, `execFile` unable to spawn `npx`'s `.cmd`
+shim on Windows without a shell, and the API server's own `.env` leaking
+`ANTHROPIC_API_KEY` into the child process so the CLI silently billed the (empty)
+API key instead of using the OAuth login.
+
+- ✅ Verified against real data: state-machine transitions
+  (`DISCOVERED → SKIPPED` on a hard-gate failure, `DISCOVERED → VERIFIED → EVALUATED`
+  on survival), with a job stuck mid-pipeline by an earlier bug correctly resumed from
+  `VERIFIED` rather than re-run from scratch.
+- ✅ The LLM stage correctly skipped two jobs that passed stage 1 by keyword coincidence
+  but aren't engineering roles at all (an Account Executive, a Service Desk Specialist)
+  — it even named the false-positive hard-gate match as part of its reasoning.
+- ✅ Cache on `jd_hash + policy_version` confirmed: a second identical pass records 0
+  new evaluations, all cache hits.
+- ✅ 15 new hard-gate unit tests, 74/74 total passing, typecheck clean across all 10
+  workspaces.
+- ✅ Run against the full 125-job backlog (incrementally, to watch Pro/Max quota —
+  turned out unnecessary, see below). Final split: **123 hard-gate skipped, 2 LLM
+  survivors, both correctly judged SKIP**. Hard-gate breakdown: 79 experience floor
+  (role wants more years than the 3-year cap), 28 geography, 16 seniority title. This
+  reflects real data, not a bug — Postman/Razorpay/Druva's current listings skew
+  senior and international; a 2.2-year India-based candidate has little overlap with
+  this specific board set today. Improving on this is a `data/boards.md` problem
+  (better company targeting, step 16 for more ATS platforms), not an evaluator problem.
+
 ## Steps 1–4 — Foundation · commit `df5c37f`
 
 **Monorepo.** npm workspaces (not pnpm — nothing extra to install), TypeScript

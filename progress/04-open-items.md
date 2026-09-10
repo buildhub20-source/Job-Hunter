@@ -18,8 +18,15 @@ npm run dev
 
 ## Blocking everything now
 
-### Step 8 (evaluator) needs an LLM API key
-The next real build step can't start without one. From Prasath.
+### ~~Step 8 (evaluator) needs an LLM API key~~ — resolved, on Pro/Max instead
+Built 2026-09-10 against the Claude Code CLI on Prasath's own Pro/Max login rather than
+waiting on API billing (his generated key has a zero credit balance — never funded).
+See D14 in [03-decisions.md](03-decisions.md). If the API key gets funded later,
+switching stage 2 back to direct API calls is a contained change in
+`packages/evaluator/src/llm.ts` only, not a re-architecture.
+
+### Step 9 (inbox worker) needs Gmail OAuth for `gopir525@gmail.com`
+The next real build step can't start without it. From Prasath.
 
 ### ~~The repo exists in exactly one place~~ — resolved, now public (intentional)
 Pushed 2026-09-10 to `github.com/buildhub20-source/Job-Hunter`. Backed up off this one
@@ -51,7 +58,7 @@ submitting live applications on Aptean hardware is not — see D12.
 | ~~`npm install` + migrate output~~ | Done 2026-09-10 |
 | ~~Git remote~~ | Done 2026-09-10 — pushed, public (intentional, see D13) |
 | Target companies for `data/boards.md` | Discovery quality |
-| LLM API key | Step 8 |
+| ~~LLM API key~~ | Not currently needed — step 8 runs on Pro/Max, see D14 |
 | Google Chat space, service account, project number | Real approvals (stub works meanwhile) |
 | Gmail OAuth for `gopir525@gmail.com` | Step 9 |
 
