@@ -21,11 +21,12 @@ npm run dev
 ### Step 8 (evaluator) needs an LLM API key
 The next real build step can't start without one. From Prasath.
 
-### The repo exists in exactly one place
-Local git, branch `master`, **no remote, nothing pushed**. One disk failure loses
-everything. A private repo is the fix — `data/personal.md` holds Vinoth's DOB, phone,
-salary and citizenship, and it's already in the committed history, so it must not be a
-public repo without rewriting history first.
+### ~~The repo exists in exactly one place~~ — resolved, now public (intentional)
+Pushed 2026-09-10 to `github.com/buildhub20-source/Job-Hunter`. Backed up off this one
+machine. **Repo is public** — Prasath made this choice explicitly and confirmed it after
+being told `data/personal.md` (Vinoth's DOB, phone, salary, citizenship) is in the
+committed history and would be visible to anyone. Not a mistake to fix; a decision to
+respect. See D13 in [03-decisions.md](03-decisions.md).
 
 ### Operation needs to move off the work laptop
 Building here is fine. Signing into Vinoth's Gmail, driving browsers into job portals and
@@ -48,7 +49,7 @@ submitting live applications on Aptean hardware is not — see D12.
 | Item | Blocks |
 | --- | --- |
 | ~~`npm install` + migrate output~~ | Done 2026-09-10 |
-| Private git remote | Nothing yet, but the repo is unbacked |
+| ~~Git remote~~ | Done 2026-09-10 — pushed, public (intentional, see D13) |
 | Target companies for `data/boards.md` | Discovery quality |
 | LLM API key | Step 8 |
 | Google Chat space, service account, project number | Real approvals (stub works meanwhile) |

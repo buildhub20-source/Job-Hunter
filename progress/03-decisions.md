@@ -64,3 +64,11 @@ The repo lives on an Aptean-managed machine. Writing code there is ordinary deve
 activity; signing into Vinoth's Gmail, driving browsers into job portals and submitting
 live applications is not. Two Aptean employees are involved, so operation moves to
 personal hardware.
+
+### D13 — The GitHub remote is public, on purpose
+Pushed to `github.com/buildhub20-source/Job-Hunter` 2026-09-10. Set private first, since
+`data/personal.md` (Vinoth's DOB, phone, salary, citizenship) is in the committed
+history and a public repo exposes all of it, not just the current file. Prasath then
+switched it to public and, after being told explicitly what that exposes, confirmed it
+as intentional. Left as public; not something to "fix" back to private on a future pass
+unless he says otherwise.
