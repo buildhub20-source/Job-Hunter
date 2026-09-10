@@ -25,8 +25,40 @@ See D14 in [03-decisions.md](03-decisions.md). If the API key gets funded later,
 switching stage 2 back to direct API calls is a contained change in
 `packages/evaluator/src/llm.ts` only, not a re-architecture.
 
-### Step 9 (inbox worker) needs Gmail OAuth for `gopir525@gmail.com`
-The next real build step can't start without it. From Prasath.
+### Step 9 (inbox worker, built) and Google Chat (built, never connected) both need Google Cloud setup
+Both are code-complete — see [01-completed.md](01-completed.md) — and both wait on the
+same kind of thing: a Google Cloud project. One project can serve both.
+
+**For Gmail (step 9):**
+1. In [Google Cloud Console](https://console.cloud.google.com), create a project (or
+   reuse one), enable the **Gmail API**.
+2. Configure the OAuth consent screen (External is fine; only `gopir525@gmail.com`
+   needs to grant it, so it can stay in Testing mode with that address added as a
+   test user).
+3. Create an OAuth client ID, type **Desktop app**. Download the JSON — that file's
+   path is `GMAIL_OAUTH_CLIENT_PATH`.
+4. **The one-time consent step must happen on Vinoth's own machine, not this one** —
+   it's his Gmail login, see D12. There, with `.env` pointing `GMAIL_OAUTH_CLIENT_PATH`
+   at that file, run `npm run authorize -w @jobops/inbox`, open the printed URL signed
+   into `gopir525@gmail.com`, approve. That writes `GMAIL_TOKEN_PATH`
+   (`data/.gmail-token.json` by default — already gitignored).
+
+**For Google Chat (steps 5–6, code already built, never run for real):**
+1. Same Cloud project: enable the **Google Chat API**.
+2. In the Chat API's Configuration page, name the app, and under "App status" pick how
+   it authenticates — create a **service account**, download its JSON key. That path
+   is `GCHAT_SERVICE_ACCOUNT_JSON_PATH`.
+3. Create (or pick) a Chat space, add the bot/app to it, add Vinoth as a member so he
+   can see and answer approval cards. The space ID (`spaces/AAAA...`) is
+   `GCHAT_SPACE_ID`.
+4. **Receiving button-click replies needs a public HTTPS URL** — Google can't call back
+   to `localhost:4000`. For now, set `GCHAT_WEBHOOK_SECRET` to any random string (the
+   webhook accepts a shared secret locally instead of a real Google-signed JWT) and use
+   something like ngrok or Cloudflare Tunnel to expose the API temporarily for testing.
+   `GCHAT_PROJECT_NUMBER` (Cloud Console → Project Settings) is the real-JWT path for
+   whenever this has a stable public address instead.
+
+None of this needs Vinoth's Gmail login except step 4 of the Gmail checklist.
 
 ### ~~The repo exists in exactly one place~~ — resolved, now public (intentional)
 Pushed 2026-09-10 to `github.com/buildhub20-source/Job-Hunter`. Backed up off this one
@@ -59,8 +91,8 @@ submitting live applications on Aptean hardware is not — see D12.
 | ~~Git remote~~ | Done 2026-09-10 — pushed, public (intentional, see D13) |
 | Target companies for `data/boards.md` | Discovery quality |
 | ~~LLM API key~~ | Not currently needed — step 8 runs on Pro/Max, see D14 |
-| Google Chat space, service account, project number | Real approvals (stub works meanwhile) |
-| Gmail OAuth for `gopir525@gmail.com` | Step 9 |
+| Google Cloud project + OAuth client + service account (checklist above) | Step 9 and real Google Chat (stub works meanwhile) |
+| A public HTTPS URL (ngrok/Cloudflare Tunnel or real hosting) | Google Chat button replies specifically |
 
 ---
 

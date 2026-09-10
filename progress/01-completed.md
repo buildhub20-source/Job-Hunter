@@ -118,6 +118,41 @@ API key instead of using the OAuth login.
   this specific board set today. Improving on this is a `data/boards.md` problem
   (better company targeting, step 16 for more ATS platforms), not an evaluator problem.
 
+---
+
+## Step 9 — Inbox worker, 2026-09-10
+
+`@jobops/inbox`. Deterministic subject/snippet classification first (rejection
+language checked before interview language, so "unfortunately, after your interview…"
+doesn't get misread), LLM fallback only when inconclusive — same token-discipline
+pattern as the evaluator, and it now shares that plumbing: pulled the "call Claude Code
+CLI headless" mechanism out of `@jobops/evaluator` into a new `@jobops/llm` package
+so this and the evaluator both use one implementation, one place to fix if it breaks.
+
+Matching: requisition ID extracted from subject/snippet, then employer-domain +
+30-day submission window. The plan's third tier (ATS thread/message ID) isn't
+implemented — nothing in the schema stores one yet, so there's nothing to match
+against. Unmatched mail is stored, not guessed onto the wrong application.
+
+State transitions respect `canTransition` from `@jobops/shared` — a classification
+that isn't a legal move from the application's current status just gets recorded and
+notified, never forced. One real gap this surfaced: the state machine only allows
+entering `BLOCKED_HUMAN` from `APPLYING`, but an assessment-link email routinely
+arrives after an application already shows `SUBMITTED_UNVERIFIED` — so assessment
+emails today notify without transitioning state. `job_alert` messages ("hand to
+discovery as a source") are stored but not fed back into discovery — no code reads an
+email into a posting yet.
+
+- ✅ 9 new unit tests (classification precedence, requisition-ID extraction), 83/83
+  total passing, typecheck clean across all 12 workspaces.
+- ✅ `POST /api/inbox/scan` registered and fails with a clear, specific error
+  (`GMAIL_OAUTH_CLIENT_PATH is not set`) rather than crashing — proves the wiring
+  without live credentials.
+- ❌ Never run against real Gmail. Needs a Google Cloud OAuth client from Prasath, and
+  the one-time interactive consent (`npm run authorize -w @jobops/inbox`) has to happen
+  on **Vinoth's own machine**, not this one — it's his Gmail login, see D12. See
+  [04-open-items.md](04-open-items.md) for the full checklist, shared with Google Chat's.
+
 ## Steps 1–4 — Foundation · commit `df5c37f`
 
 **Monorepo.** npm workspaces (not pnpm — nothing extra to install), TypeScript

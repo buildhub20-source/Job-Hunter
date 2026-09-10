@@ -41,6 +41,16 @@ any staffing/consultancy company to the registry.
 
 ---
 
+## Step 9 — Inbox worker (built 2026-09-10, not yet run live)
+
+Code complete and unit-tested — see [01-completed.md](01-completed.md). Blocked on
+Google Cloud OAuth credentials from Prasath and a one-time interactive consent step
+that must happen on **Vinoth's own machine** (his Gmail, not Prasath's — D12). Full
+checklist in [04-open-items.md](04-open-items.md), shared with Google Chat's since
+both need a Google Cloud project.
+
+---
+
 ## Step 9 — Inbox worker
 
 Daily read-only Gmail scan of **`gopir525@gmail.com`** — Vinoth's mailbox, not Prasath's.

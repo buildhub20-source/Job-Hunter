@@ -103,3 +103,17 @@ Three real bugs surfaced getting this working, in order:
    zero-credit API key instead of the Pro/Max login, failing with "Credit balance is
    too low" even though the person was logged in. Fixed by stripping the key from the
    child process's environment specifically for this call.
+
+This mechanism (`packages/llm/src/cli.ts`) is shared — the inbox worker's LLM
+classification fallback (step 9) uses the same call, not a second implementation.
+
+### D15 — Inbox worker never forces an illegal state transition
+An assessment-link email routinely arrives once an application already shows
+`SUBMITTED_UNVERIFIED`, but the state machine (`@jobops/shared`) only allows entering
+`BLOCKED_HUMAN` from `APPLYING`. Rather than special-case the state machine to permit
+it, or silently skip the notification, the inbox worker checks `canTransition` before
+every state change: if the move isn't legal, the classification and notification still
+happen (a human still needs to know about the assessment), but the application's
+status is left alone. Same principle for `job_alert` ("hand to discovery as a source")
+— nothing reads an email into a posting yet, so it's stored and left there rather than
+half-wired into discovery.
