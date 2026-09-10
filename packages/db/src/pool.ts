@@ -1,5 +1,11 @@
-import 'dotenv/config';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { config as loadEnv } from 'dotenv';
 import pg from 'pg';
+
+// npm workspace scripts run with cwd set to this package's directory, not the repo
+// root, so the default dotenv lookup (process.cwd()/.env) misses the real .env file.
+loadEnv({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '.env') });
 
 const { Pool } = pg;
 

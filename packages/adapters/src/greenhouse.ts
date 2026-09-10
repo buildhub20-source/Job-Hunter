@@ -61,9 +61,10 @@ export const greenhouseAdapter: DiscoveryAdapter = {
   },
 
   async healthCheck(fetchImpl: typeof fetch = fetch): Promise<AdapterHealth> {
-    // A board that is known to exist; if this fails the adapter or the network is down.
+    // postman is our own registered board (data/boards.md), verified live 2026-09-10 —
+    // more durable than a third-party tenant we don't control and can't detect renaming.
     try {
-      const res = await fetchImpl(`${BASE}/vaultsecurity/jobs`, { headers: { accept: 'application/json' } });
+      const res = await fetchImpl(`${BASE}/postman/jobs`, { headers: { accept: 'application/json' } });
       return { adapterId: 'greenhouse', ok: res.ok, checkedAt: new Date().toISOString(), error: res.ok ? undefined : `HTTP ${res.status}` };
     } catch (err) {
       return { adapterId: 'greenhouse', ok: false, checkedAt: new Date().toISOString(), error: err instanceof Error ? err.message : String(err) };
