@@ -19,6 +19,7 @@
     "@jobops/approvals": "*",
     "@jobops/adapters": "*",
     "@jobops/discovery": "*",
-    "@jobops/evaluator": "*"
+    "@jobops/evaluator": "*",
+    "@jobops/inbox": "*"
   }
 }

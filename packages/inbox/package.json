@@ -1,15 +1,20 @@
 {
-  "name": "@jobops/evaluator",
+  "name": "@jobops/inbox",
   "version": "0.1.0",
   "type": "module",
   "main": "./src/index.ts",
   "exports": { ".": "./src/index.ts" },
-  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "authorize": "tsx src/authorize.ts"
+  },
   "dependencies": {
+    "@jobops/approvals": "*",
+    "@jobops/chat": "*",
     "@jobops/db": "*",
     "@jobops/llm": "*",
-    "@jobops/profile": "*",
     "@jobops/shared": "*",
+    "dotenv": "^16.4.5",
     "zod": "^3.23.8"
   }
 }

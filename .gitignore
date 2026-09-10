@@ -7,6 +7,8 @@ dist/
 *.tsbuildinfo
 evidence/
 screenshots/
+data/.gmail-token.json
+*client_secret*.json
 .playwright/
 .DS_Store
 _to_delete/

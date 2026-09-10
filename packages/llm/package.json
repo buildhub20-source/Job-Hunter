@@ -1,15 +1,11 @@
 {
-  "name": "@jobops/evaluator",
+  "name": "@jobops/llm",
   "version": "0.1.0",
   "type": "module",
   "main": "./src/index.ts",
   "exports": { ".": "./src/index.ts" },
   "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit" },
   "dependencies": {
-    "@jobops/db": "*",
-    "@jobops/llm": "*",
-    "@jobops/profile": "*",
-    "@jobops/shared": "*",
-    "zod": "^3.23.8"
+    "@anthropic-ai/claude-code": "2.1.267"
   }
 }
