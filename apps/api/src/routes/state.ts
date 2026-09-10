@@ -32,7 +32,9 @@ export async function stateRoutes(app: FastifyInstance): Promise<void> {
     const [counts] = await query<Record<string, string>>(`
       SELECT
         (SELECT count(*) FROM job_postings WHERE discovered_at::date = current_date) AS discovered_today,
-        (SELECT count(*) FROM job_postings WHERE state = 'EVALUATED')                AS eligible,
+        (SELECT count(*) FROM job_postings p WHERE p.state = 'EVALUATED'
+           AND (SELECT tier FROM job_evaluations e WHERE e.job_posting_id = p.id
+                ORDER BY e.created_at DESC LIMIT 1) <> 'SKIP')                       AS eligible,
         (SELECT count(*) FROM job_evaluations WHERE tier = 'A')                      AS a_tier,
         (SELECT count(*) FROM applications WHERE submitted_at::date = current_date)  AS submitted_today,
         (SELECT count(*) FROM approvals WHERE status = 'pending')                    AS pending_approvals,

@@ -18,6 +18,7 @@
     "@jobops/chat": "*",
     "@jobops/approvals": "*",
     "@jobops/adapters": "*",
-    "@jobops/discovery": "*"
+    "@jobops/discovery": "*",
+    "@jobops/evaluator": "*"
   }
 }
