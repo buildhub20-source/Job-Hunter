@@ -4,19 +4,22 @@ Blockers, unknowns, and what's needed from whom. Clear these before they compoun
 
 ---
 
-## Blocking everything
+## Nothing is blocking step 0 anymore
 
-### Nothing has ever run
-Eight commits, 93 source files, four build phases — never installed, never executed
-against a database. 41 of 59 tests have run, all of them pure logic on flattened copies.
-The npm registry is blocked from both shells available to Claude, so this can only be
-done by Prasath.
+Resolved 2026-09-10, after the WSL2 restart: Postgres is up, migrated (26 tables), and a
+real discovery run has completed (125 jobs from Postman/Razorpay/Druva). See
+[01-completed.md](01-completed.md) for the two dotenv/cwd bugs found and fixed along the
+way. Bringing the stack back up after a reboot is just:
 
 ```
-npm install && npm run db:up && npm run db:migrate && npm test && npm run dev
+npm run db:up
+npm run dev
 ```
 
-Paste the output, errors included. Expect at least one wrong dependency pin.
+## Blocking everything now
+
+### Step 8 (evaluator) needs an LLM API key
+The next real build step can't start without one. From Prasath.
 
 ### The repo exists in exactly one place
 Local git, branch `master`, **no remote, nothing pushed**. One disk failure loses
@@ -44,7 +47,7 @@ submitting live applications on Aptean hardware is not — see D12.
 
 | Item | Blocks |
 | --- | --- |
-| `npm install` + migrate output | Everything |
+| ~~`npm install` + migrate output~~ | Done 2026-09-10 |
 | Private git remote | Nothing yet, but the repo is unbacked |
 | Target companies for `data/boards.md` | Discovery quality |
 | LLM API key | Step 8 |
@@ -55,13 +58,15 @@ submitting live applications on Aptean hardware is not — see D12.
 
 ## Known unverified
 
-- **All 10 board tokens in `data/boards.md`** are guesses. A wrong one returns HTTP 404
-  and appears in the run's failure list — the first discovery run is the verification pass.
+- **Board tokens** — resolved 2026-09-10. All 10 original guesses probed directly against
+  the real Greenhouse/Lever APIs (no app needed). 3 are real and enabled: `postman` (67
+  jobs), `razorpay` (23 jobs, tenant and adapter both corrected), `druva` (38 jobs). The
+  other 7 are on ATS platforms this codebase doesn't support yet (SmartRecruiters,
+  Workday, Workable, Gem, Kula, or no ATS at all) — disabled, not deleted, with the real
+  platform noted in `data/boards.md` for step 16.
 - **The Google Chat transport** has never talked to Google. Only the stub path has run.
 - **The webhook JWT verification** is written against Google's documented format but has
   never seen a real token.
-- **Every SQL migration.** 24 tables, never applied.
-- **Every API route.** Never served a request.
 
 ## Known annoyances
 

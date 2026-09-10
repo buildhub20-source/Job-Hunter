@@ -5,6 +5,79 @@ Build steps 1–7 of 17. Each entry says what was **verified** versus what is
 
 ---
 
+## Step 0 (partial) — Install and run, 2026-09-10
+
+`npm install` succeeded (registry access was the earlier blocker, now resolved).
+
+- ✅ `npm test` — **all 59 tests pass**, up from 41 flattened-copy runs.
+- ✅ `npm run typecheck` — clean across all 9 workspaces, no errors.
+- ✅ `npm run profile:check` — 41 facts (39 usable), 33 policy rows (10 hard gates, 23
+  ranking), policy version computed. Found and fixed a real bug:
+  [`packages/profile/src/cli.ts`](../packages/profile/src/cli.ts) defaulted
+  `JOBOPS_DATA_DIR` to `./data`, correct only if run from the repo root — but an npm
+  workspace script's cwd is the package directory, so it always threw `ENOENT`. Fixed to
+  `../../data`, matching the pattern already correct in `apps/api/src/config.ts`.
+- ✅ **All 3 live-enabled board tokens verified against the real Greenhouse API**
+  (`boards-api.greenhouse.io`), no app or database needed: `postman` (67 jobs), `druva`
+  (38 jobs). `razorpay`'s guessed tenant was wrong (404); the real one,
+  `razorpaysoftwareprivatelimited`, returns 23 jobs. Adapter was also wrong — Razorpay is
+  Greenhouse, not Lever. See [data/boards.md](../data/boards.md) for the other 7 tokens,
+  all confirmed dead and disabled (not deleted) with the real ATS each company uses.
+- ❌ Still unproven at the time: the database. Resolved below, same day, after restart.
+
+## Step 0 (partial, continued) — API and dashboard actually run, 2026-09-10
+
+Both servers started for the first time ever (`.claude/launch.json` added), against the
+data files, with no database. `apps/dashboard/package.json`'s `dev` script had a
+hardcoded `-p 3000`; removed so it can pick another port when 3000 is taken.
+
+- ✅ API (`localhost:4000`) serves real requests: `/api/profile`, `/api/policies`,
+  `/api/boards`, `/api/discovery/probe`, `/api/adapters/healthcheck` all return correct
+  data. None of these touch Postgres.
+- ✅ Found and fixed a real bug via the healthcheck route:
+  [`greenhouse.ts`](../packages/adapters/src/greenhouse.ts)'s health check hit a
+  hardcoded third-party tenant (`vaultsecurity`) as "known to exist" — it had gone 404
+  (renamed/closed), so the healthcheck reported `greenhouse: false` even though the
+  adapter and postman/druva/razorpay all work fine. Swapped the reference to our own
+  verified `postman` board, which we control and already know is live.
+- ✅ Dashboard (`next dev`, WASM fallback — see below) renders all 10 pages. Overview,
+  Policies and Profile work fully end-to-end (Profile confirmed all 41 facts render
+  correctly with edit affordances). The other 7 pages (Jobs, Applications, Runs, Adapter
+  health, Approvals, Audit, Updates) fail gracefully with "Postgres is not reachable
+  yet." — no crashes, no blank screens.
+- ⚠️ **Environment note**: this laptop's Application Control policy blocks the native
+  `@next/swc-win32-x64-msvc` binary (`An Application Control policy has blocked this
+  file`). Next.js falls back to `@next/swc-wasm-nodejs` automatically — works, just a
+  ~50s slower cold start. Worth knowing if dev startup ever looks hung.
+
+## Step 0 (complete) — database up, migrated, first real discovery run, 2026-09-10
+
+After the WSL2 restart: Docker Desktop started clean, `npm run db:up` pulled and started
+`postgres:16-alpine`, `npm run db:migrate` applied both migrations — **first time ever**,
+26 tables now exist.
+
+- ✅ Found and fixed a repo-wide bug, same class as the profile CLI one from earlier
+  today: `packages/db/src/pool.ts`, `apps/api/src/config.ts`, and
+  `packages/profile/src/cli.ts` all did `import 'dotenv/config'`, which only loads
+  `.env` from `process.cwd()`. Every npm workspace script runs with cwd set to the
+  package directory, so `.env` (and therefore `DATABASE_URL`) was silently never found —
+  `db:migrate` failed with "DATABASE_URL is not set" even though `.env` was correct.
+  Fixed all three to resolve `.env`, `JOBOPS_DATA_DIR`, and `JOBOPS_REPO_ROOT` relative
+  to each file's own location (`import.meta.url`) rather than `process.cwd()` or a
+  relative default — robust regardless of which directory a script is invoked from.
+  [pool.ts](../packages/db/src/pool.ts), [config.ts](../apps/api/src/config.ts),
+  [cli.ts](../packages/profile/src/cli.ts).
+- ✅ `POST /api/discovery/run` — **first real discovery run**: 3 boards (postman,
+  razorpay, druva), 128 fetched, **125 inserted**, 3 duplicates caught, 0 failures.
+- ✅ Dashboard Jobs page renders all 125 postings correctly — company, title, requisition
+  ID, state `DISCOVERED`, identity source `requisition_id`, identity reliable `yes`.
+- ✅ Overview page live stats: `discovered_today: 125`, everything else correctly 0
+  (evaluator doesn't exist yet — step 8).
+- ✅ Adapter Health page shows `greenhouse: Healthy`. No `lever` row, correctly — no
+  Lever board is currently enabled (see the boards.md disable list above).
+- ✅ `npm test` (59/59) and `npm run typecheck` (all 9 workspaces) still clean after
+  all fixes.
+
 ## Steps 1–4 — Foundation · commit `df5c37f`
 
 **Monorepo.** npm workspaces (not pnpm — nothing extra to install), TypeScript

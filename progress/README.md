@@ -5,26 +5,31 @@ Update it at the end of every working session.
 
 | | |
 | --- | --- |
-| **Last updated** | 2026-09-09 |
+| **Last updated** | 2026-09-10 |
 | **Commits** | 8 |
 | **Source files** | 93 |
 | **Packages** | shared · db · profile · chat · approvals · adapters · discovery |
 | **Build steps done** | 1–7 of 17 |
-| **Tests** | 59 written · **41 executed and passing** · 18 blocked on `npm install` |
-| **Ever run end to end** | **No** — see [04-open-items](04-open-items.md) |
+| **Tests** | 59 written · **59 executed and passing** |
+| **Typecheck** | clean across all 9 workspaces |
+| **Ever run end to end** | **Yes** — Postgres up, migrated, real discovery run completed: 125 jobs from Postman/Razorpay/Druva now in the database |
 
 ## The one thing that matters right now
 
-Nothing has been installed or executed against a real database. Four build phases are
-written and typed but unproven. Before step 8 is worth starting:
+Step 0 is done. `npm install`, `npm test`, `npm run typecheck`, `npm run profile:check`,
+`npm run db:up`, `npm run db:migrate`, both dev servers, and a real
+`POST /api/discovery/run` all work — see [01-completed.md](01-completed.md). Next real
+work is **step 8, the evaluator** — needs an LLM API key from Prasath (see
+[04-open-items.md](04-open-items.md)).
+
+To bring the stack up again after a reboot:
 
 ```
-npm install
-npm run db:up && npm run db:migrate
-npm test
+npm run db:up
 npm run dev
-curl -XPOST localhost:4000/api/discovery/run
 ```
+(Migrations only need re-running if `db/migrations/` gets a new file — `docker compose`
+keeps the data volume across restarts.)
 
 ## Index
 
