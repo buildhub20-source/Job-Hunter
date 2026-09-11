@@ -7,6 +7,7 @@ export const metadata = { title: 'JobOps', description: 'Job-search operating sy
 const NAV = [
   { href: '/', label: 'Overview' },
   { href: '/jobs', label: 'Jobs' },
+  { href: '/funnel', label: 'Funnel' },
   { href: '/applications', label: 'Applications' },
   { href: '/updates', label: 'Updates' },
   { href: '/approvals', label: 'Approvals log' },

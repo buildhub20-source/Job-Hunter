@@ -51,15 +51,25 @@ export async function stateRoutes(app: FastifyInstance): Promise<void> {
     return { dbDown: false, ...counts };
   });
 
-  app.get('/api/jobs', async () => {
+  /**
+   * `?eligible=1` returns only jobs whose latest evaluation is not SKIP, newest
+   * evaluation first. Without it the newest-200-by-discovery window hides them:
+   * an eligible job is usually older than the last discovery sweep.
+   */
+  app.get('/api/jobs', async (req) => {
+    const { eligible } = (req.query ?? {}) as { eligible?: string };
+    const onlyEligible = eligible === '1' || eligible === 'true';
+
     const { rows, dbDown } = await safe(() =>
       query(`SELECT p.id, p.title, p.state, p.requisition_id, p.identity_source, p.identity_reliable,
-                    c.display_name AS company, e.tier, e.confidence, p.discovered_at
+                    p.source_url, p.official_url, c.display_name AS company, e.tier, e.confidence, e.reason,
+                    p.discovered_at, e.created_at AS evaluated_at
              FROM job_postings p
              JOIN companies c ON c.id = p.company_id
-             LEFT JOIN LATERAL (SELECT tier, confidence FROM job_evaluations
+             LEFT JOIN LATERAL (SELECT tier, confidence, reason, created_at FROM job_evaluations
                                 WHERE job_posting_id = p.id ORDER BY created_at DESC LIMIT 1) e ON true
-             ORDER BY p.discovered_at DESC LIMIT 200`),
+             ${onlyEligible ? `WHERE e.tier IS NOT NULL AND e.tier <> 'SKIP'` : ''}
+             ORDER BY ${onlyEligible ? 'e.created_at' : 'p.discovered_at'} DESC LIMIT 200`),
     );
     return { dbDown, jobs: rows };
   });
