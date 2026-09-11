@@ -1,0 +1,14 @@
+# Place at: v3/dashboard/netlify.toml
+# Netlify "Base directory" must be set to: v3/dashboard
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Forces the Next.js runtime. Without this Netlify publishes .next as a
+# static folder, which has no index.html at the root -> 404 on every path.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
