@@ -12,3 +12,5 @@ data/.gmail-token.json
 .playwright/
 .DS_Store
 _to_delete/
+secrets/
+.env

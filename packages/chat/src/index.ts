@@ -12,7 +12,6 @@ export { StubTransport } from './stub.js';
 /** Real transport when credentials exist, stub otherwise. Never throws on missing config. */
 export function createTransport(env: NodeJS.ProcessEnv = process.env): ChatTransport {
   const space = env['GCHAT_SPACE_ID'];
-  const keyPath = env['GCHAT_SERVICE_ACCOUNT_JSON_PATH'];
-  if (space && keyPath) return new GoogleChatTransport(space, keyPath);
+  if (space) return new GoogleChatTransport(space);
   return new StubTransport();
 }
