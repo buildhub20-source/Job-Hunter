@@ -11,6 +11,7 @@ const baseCard: EvaluableCard = {
   employer_id: 'acme',
   title: 'Software Engineer',
   location: ['Bengaluru', 'India'],
+  country: 'India',
   remote_type: 'onsite',
   experience_min: 1,
   experience_max: 3,
@@ -67,15 +68,22 @@ test('experience floor above the JD max is skipped', () => {
 });
 
 test('a role outside the allowed countries and not remote is skipped', () => {
-  const result = runHardGates({ ...baseCard, location: ['Berlin', 'Germany'] }, policy);
+  const result = runHardGates({ ...baseCard, location: ['Berlin', 'Germany'], country: 'Germany' }, policy);
   assert.equal(result.pass, false);
   assert.match(result.reason!, /Berlin/);
+});
+
+test('an India city with no literal "India" in the location string still passes — real bug, 2026-09-10', () => {
+  // parseLocation (@jobops/adapters) already resolves this to country: 'India' via its
+  // INDIA_CITIES list; the gate must trust that, not re-derive from the raw strings.
+  const result = runHardGates({ ...baseCard, location: ['Bengaluru'], country: 'India' }, policy);
+  assert.equal(result.pass, true);
 });
 
 test('a remote role bypasses the country gate when allow_remote_anywhere is true', () => {
   const withRemote = [...policy, gate('allow_remote_anywhere', 'true', 21)];
   const result = runHardGates(
-    { ...baseCard, location: ['Anywhere'], remote_type: 'remote' }, withRemote,
+    { ...baseCard, location: ['Anywhere'], country: null, remote_type: 'remote' }, withRemote,
   );
   assert.equal(result.pass, true);
 });
@@ -83,7 +91,7 @@ test('a remote role bypasses the country gate when allow_remote_anywhere is true
 test('a remote role is still checked against geography when allow_remote_anywhere is false', () => {
   const withRemote = [...policy, gate('allow_remote_anywhere', 'false', 21)];
   const result = runHardGates(
-    { ...baseCard, location: ['Berlin', 'Germany'], remote_type: 'remote' }, withRemote,
+    { ...baseCard, location: ['Berlin', 'Germany'], country: 'Germany', remote_type: 'remote' }, withRemote,
   );
   assert.equal(result.pass, false);
 });

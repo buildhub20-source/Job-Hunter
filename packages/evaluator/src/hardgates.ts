@@ -10,6 +10,10 @@ export interface EvaluableCard {
   employer_id: string;
   title: string;
   location: string[];
+  /** Already resolved by @jobops/adapters' parseLocation (recognizes Indian cities
+   * even when the posting never spells out "India") — use this, not `location`, for
+   * country checks. */
+  country: string | null;
   remote_type: 'onsite' | 'hybrid' | 'remote' | 'unknown';
   experience_min: number | null;
   experience_max: number | null;
@@ -77,9 +81,11 @@ const CHECKS: Record<string, Check> = {
       return null;
     }
     const allowed = splitList(gate.value);
-    const locations = card.location.map((l) => l.toLowerCase());
-    const matches = allowed.some((country) => locations.some((l) => l.includes(country)));
-    return matches ? null : `location [${card.location.join(', ') || 'unknown'}] outside ${gate.value}`;
+    // card.country is already resolved (recognizes e.g. "Bengaluru" as India even
+    // without the word "India" in the posting) — trust it over re-deriving from the
+    // raw location strings, which is what caused this to wrongly skip real India jobs.
+    if (card.country && allowed.includes(card.country.toLowerCase())) return null;
+    return `location [${card.location.join(', ') || 'unknown'}] outside ${gate.value}`;
   },
 
   blocked_title_words: (card, gate) => {
