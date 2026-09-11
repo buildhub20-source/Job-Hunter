@@ -13,11 +13,29 @@ original 10 guesses were wrong; disabled rather than deleted, with the actual AT
 each company uses today, since some (SmartRecruiters, Workday) are on the step-16
 adapter roadmap.
 
+**Added 2026-09-10 (second pass):** `project44` came from `data/policies/resumes.md` —
+Vinoth already has a tailored resume for it, but it wasn't in this file at all. The
+other 9 were probed against a batch of India-focused product/tech companies known to
+hire junior-to-mid engineers; two near-hits (`clear`, `slice`) turned out to be the
+*wrong* companies on inspection — a US identity-verification company and a US pizza
+platform, not ClearTax or the Indian fintech Slice — and were left out rather than
+added on a tenant-name coincidence.
+
 | employer_id | display_name | adapter | tenant | enabled |
 | --- | --- | --- | --- | --- |
 | postman | Postman | greenhouse | postman | yes |
 | razorpay | Razorpay | greenhouse | razorpaysoftwareprivatelimited | yes |
 | druva | Druva | greenhouse | druva | yes |
+| project44 | Project44 | greenhouse | project44 | yes |
+| zenoti | Zenoti | greenhouse | zenoti | yes |
+| highradius | HighRadius | greenhouse | highradius | yes |
+| observeai | Observe.AI | greenhouse | observeai | yes |
+| groww | Groww | greenhouse | groww | yes |
+| cred | CRED | lever | cred | yes |
+| meesho | Meesho | lever | meesho | yes |
+| netskope | Netskope | greenhouse | netskope | yes |
+| rubrik | Rubrik | greenhouse | rubrik | yes |
+| mindtickle | Mindtickle | lever | mindtickle | yes |
 | zerodha | Zerodha | lever | zerodha | no |
 | hasura | Hasura | greenhouse | hasura | no |
 | chargebee | Chargebee | lever | chargebee | no |
