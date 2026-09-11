@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
 import { createServer } from 'node:http';
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +15,7 @@ import { buildAuthUrl, exchangeCode, type ClientSecret } from './oauth.js';
 const PORT = 53682;
 const REDIRECT_URI = `http://127.0.0.1:${PORT}/oauth2callback`;
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-
+loadEnv({ path: join(repoRoot, '.env') });
 async function loadClientSecret(): Promise<ClientSecret> {
   const path = resolve(repoRoot, process.env.GMAIL_OAUTH_CLIENT_PATH ?? '');
   if (!process.env.GMAIL_OAUTH_CLIENT_PATH) {
@@ -38,6 +38,11 @@ async function main(): Promise<void> {
   const code = await new Promise<string>((resolvePromise, reject) => {
     const server = createServer((req, res) => {
       const url = new URL(req.url ?? '/', REDIRECT_URI);
+      if (url.pathname !== '/oauth2callback') {
+        res.statusCode = 404;
+        res.end();
+        return;
+      }
       const code = url.searchParams.get('code');
       const error = url.searchParams.get('error');
       res.end(error ? `Authorization failed: ${error}. You can close this tab.` : 'Authorized. You can close this tab.');
