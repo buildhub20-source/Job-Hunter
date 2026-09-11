@@ -253,8 +253,13 @@ function applyGates() {
     let verdict = 'Pass';
 
     if (verdict === 'Pass' && pol['blocked_title_words']) {
+      // Seniority lives in the main title, never in a parenthetical. Without this,
+      // "Software Engineer (Secrets Manager & AI Identity)" is rejected for "manager"
+      // — a product name, not a level. Whole-word match too, so "lead" misses "leading".
+      const mainTitle = title.replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ')
+                             .replace(/\s+/g, ' ').trim();
       const bad = pol['blocked_title_words'].value.split(',').map(s => s.trim()).filter(Boolean)
-        .find(w => title.indexOf(w) !== -1);
+        .find(w => new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(mainTitle));
       if (bad) verdict = 'title contains blocked word "' + bad + '"';
     }
     if (verdict === 'Pass' && pol['required_title_words']) {
@@ -284,15 +289,87 @@ function applyGates() {
   return results.length;
 }
 
+
+/* ------------------------------------------------------------ normalise */
+
+/**
+ * Spark writes rows straight into the sheet, bypassing appendNewJobs(), so nothing
+ * has given those rows an identity. This backfills Job ID and ATS for any row that
+ * lacks them, and marks later copies of an id as Skipped rather than deleting them
+ * (deleting rows under a live agent that is still writing is asking for trouble).
+ */
+function normalizeRows() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const sh = SpreadsheetApp.getActive().getSheetByName(JOBS_SHEET);
+    const ix = headerIndex(sh);
+    const last = sh.getLastRow();
+    if (last < 2) return 0;
+
+    const n = last - 1;
+    const data = sh.getRange(2, 1, n, JOB_HEADERS.length).getValues();
+    const ids = [], atss = [], statuses = [], notes = [], discovered = [];
+    const seen = new Set();
+    const nowIso = new Date().toISOString();
+    let filled = 0, dupes = 0;
+
+    for (const row of data) {
+      const link = row[ix['Apply Link']];
+      let id = row[ix['Job ID']];
+      let ats = row[ix['ATS']];
+      let status = row[ix['Status']] || 'Not Applied';
+      let note = row[ix['Notes']] || '';
+
+      if (link && !id) {
+        const parsed = jobId(link, row[ix['Company Name']], row[ix['Role']], row[ix['Location']]);
+        id = parsed.id; ats = parsed.ats; filled++;
+      }
+      if (id) {
+        if (seen.has(id) && status !== 'Applied') {
+          status = 'Skipped';
+          note = note || 'duplicate of an earlier row';
+          dupes++;
+        } else {
+          seen.add(id);
+        }
+      }
+      ids.push([id]); atss.push([ats]); statuses.push([status]); notes.push([note]);
+      // Spark does not stamp this; first time we see a row, record when it appeared.
+      discovered.push([row[ix['Discovered At']] || nowIso]);
+    }
+
+    sh.getRange(2, ix['Job ID'] + 1, n, 1).setValues(ids);
+    sh.getRange(2, ix['ATS'] + 1, n, 1).setValues(atss);
+    sh.getRange(2, ix['Status'] + 1, n, 1).setValues(statuses);
+    sh.getRange(2, ix['Notes'] + 1, n, 1).setValues(notes);
+    sh.getRange(2, ix['Discovered At'] + 1, n, 1).setValues(discovered);
+    Logger.log('normalizeRows: ' + filled + ' identified, ' + dupes + ' duplicates skipped');
+    return filled;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 /* --------------------------------------------------------------- triggers */
 
+/**
+ * The scheduled run. Stamps a heartbeat so you can prove from the outside that the
+ * hourly trigger is actually firing — doGet returns it as lastTickAt.
+ */
 function hourlyTick() {
-  enrichPending(40);
-  applyGates();
+  const identified = normalizeRows();
+  const enriched = enrichPending(40);
+  const gated = applyGates();
+  PropertiesService.getScriptProperties().setProperty('LAST_TICK', JSON.stringify({
+    at: new Date().toISOString(), identified: identified, enriched: enriched, gated: gated,
+  }));
+  Logger.log('hourlyTick: identified=' + identified + ' enriched=' + enriched + ' gated=' + gated);
 }
 
 function onSheetChange(e) {
   if (!e || (e.changeType !== 'INSERT_ROW' && e.changeType !== 'EDIT')) return;
+  normalizeRows();
   applyGates();
 }
 
@@ -325,8 +402,15 @@ function doGet(e) {
     if (g && g !== 'Pass') gates[g] = (gates[g] || 0) + 1;
   });
 
+  let lastTick = null;
+  try { lastTick = JSON.parse(PropertiesService.getScriptProperties().getProperty('LAST_TICK')); } catch (err) { lastTick = null; }
+
   const payload = {
     generatedAt: new Date().toISOString(),
+    lastTick: lastTick,
+    triggers: ScriptApp.getProjectTriggers().map(t => ({
+      fn: t.getHandlerFunction(), type: String(t.getEventType()),
+    })),
     totals: {
       all: jobs.length,
       passed: count('Gate Result', 'Pass'),
@@ -378,7 +462,15 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
   let out;
-  if (body.rows) out = { ok: true, added: appendNewJobs(body.rows) };
+  if (body.action === 'tick') {
+    // The dashboard's "Run pipeline" button. Re-identifies, enriches and gates.
+    // It cannot start Spark (no API) or the applier (runs locally).
+    hourlyTick();
+    let tick = null;
+    try { tick = JSON.parse(PropertiesService.getScriptProperties().getProperty('LAST_TICK')); } catch (err) { tick = null; }
+    out = { ok: true, lastTick: tick };
+  }
+  else if (body.rows) out = { ok: true, added: appendNewJobs(body.rows) };
   else if (body.jobId) out = { ok: setStatus(body.jobId, body.status, body.notes) };
   else out = { error: 'nothing to do' };
   return ContentService.createTextOutput(JSON.stringify(out))
