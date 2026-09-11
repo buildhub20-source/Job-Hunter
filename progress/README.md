@@ -5,27 +5,36 @@ Update it at the end of every working session.
 
 | | |
 | --- | --- |
-| **Last updated** | 2026-09-10 |
-| **Commits** | 8 |
-| **Source files** | 116 |
+| **Last updated** | 2026-09-11 |
+| **Commits** | 8 (more uncommitted — see below) |
+| **Source files** | 116+ |
 | **Packages** | shared · db · profile · chat · approvals · adapters · discovery · evaluator · llm · inbox |
-| **Build steps done** | 1–9 of 17 (9 built and tested, not yet run against live Gmail) |
-| **Tests** | 83 written · **83 executed and passing** |
+| **Build steps done** | 1–9 of 17 |
+| **Tests** | 84 written · **84 executed and passing** |
 | **Typecheck** | clean across all 12 workspaces |
-| **Ever run end to end** | **Yes** — Postgres up, migrated; real discovery run (125 jobs) and real evaluator run both completed against live data |
+| **Ever run end to end** | **Yes** — Postgres, discovery (13 boards), evaluator, all run against live data. Gmail credentials exist but the scan hasn't been run live yet this session. |
 
 ## The one thing that matters right now
 
-Steps 0, 8, and 9 are all built. Discovery has put 125 real jobs in the database; the
-evaluator (hard gates + LLM ranking) has judged them; the inbox worker (classification +
-matching) is code-complete and unit-tested but has never touched real Gmail — see
-[01-completed.md](01-completed.md). Both LLM stages share one mechanism
-(`@jobops/llm`): the Claude Code CLI on the operator's own Pro/Max login, not a paid API key
-— see D14 in [03-decisions.md](03-decisions.md).
+Two things happened since the last commit that aren't reflected in git yet:
 
-Next real work is wiring up real Google Chat and Gmail — both blocked on the same
-Google Cloud Console checklist in [04-open-items.md](04-open-items.md). One piece of
-that (the Gmail consent step) has to happen on **Vinoth's own machine**, not this one.
+1. **A real correctness bug, found and fixed**: the geography hard gate ignored the
+   jobcard's already-correct `country` field and re-derived it from raw location text,
+   so cities like "Bengaluru" (no literal "India" in the string) were wrongly rejected.
+   Three already-evaluated jobs had this wrong verdict; corrected in the database and
+   re-evaluated. See [01-completed.md](01-completed.md).
+2. **A "v3" redesign proposal** exists at [docs/V3-SparkFlow.md](../docs/V3-SparkFlow.md)
+   — replace Postgres/ATS-adapters with Sheets + Gemini Spark + Apps Script. Explicitly
+   marked design-not-built. **This is an open fork, not a decided direction** — see
+   [04-open-items.md](04-open-items.md).
+
+Also since the last commit: Gmail OAuth is fully wired (credentials in `secrets/`),
+`data/boards.md` grew to 13 enabled boards, Google Chat's auth was rewritten around
+Application Default Credentials because this org blocks service-account key downloads
+(D16), and a Funnel analytics page was added to the dashboard.
+
+None of this is committed. Working tree has real, tested changes sitting uncommitted —
+commit them before doing anything else, so a crash doesn't lose them again.
 
 To bring the stack up again after a reboot:
 

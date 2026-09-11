@@ -118,3 +118,15 @@ happen (a human still needs to know about the assessment), but the application's
 status is left alone. Same principle for `job_alert` ("hand to discovery as a source")
 — nothing reads an email into a posting yet, so it's stored and left there rather than
 half-wired into discovery.
+
+### D16 — Google Chat auth is Application Default Credentials, not a service-account key file
+The original plan (see D6) assumed a downloaded service-account JSON key, the standard
+Google Chat bot pattern. This org enforces `iam.disableServiceAccountKeyCreation`, so
+that key can't be downloaded at all — not a bug, a deliberate security policy.
+`packages/chat/src/google.ts` was rewritten around `google-auth-library`'s
+`GoogleAuth`, using Application Default Credentials with service-account
+impersonation instead: `gcloud auth application-default login
+--impersonate-service-account=<email>` once per machine, no key file, no secret to
+leak if the repo is public (see D13). `GoogleChatTransport` no longer takes a
+key-path argument at all — `createTransport` now creates it whenever `GCHAT_SPACE_ID`
+is set, regardless of any service-account-path env var.

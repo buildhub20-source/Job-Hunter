@@ -25,40 +25,37 @@ See D14 in [03-decisions.md](03-decisions.md). If the API key gets funded later,
 switching stage 2 back to direct API calls is a contained change in
 `packages/evaluator/src/llm.ts` only, not a re-architecture.
 
-### Step 9 (inbox worker, built) and Google Chat (built, never connected) both need Google Cloud setup
-Both are code-complete — see [01-completed.md](01-completed.md) — and both wait on the
-same kind of thing: a Google Cloud project. One project can serve both.
+### ~~Step 9 (inbox worker) needs Gmail OAuth~~ — resolved
+`secrets/client_secret.json` and `secrets/.gmail-token.json` exist, `.env` points at
+them. See [01-completed.md](01-completed.md). Not yet actually run against the live
+mailbox in this session (Docker/Postgres had to come back up first) — that's the
+immediate next verification step, not a blocker.
 
-**For Gmail (step 9):**
-1. In [Google Cloud Console](https://console.cloud.google.com), create a project (or
-   reuse one), enable the **Gmail API**.
-2. Configure the OAuth consent screen (External is fine; only `gopir525@gmail.com`
-   needs to grant it, so it can stay in Testing mode with that address added as a
-   test user).
-3. Create an OAuth client ID, type **Desktop app**. Download the JSON — that file's
-   path is `GMAIL_OAUTH_CLIENT_PATH`.
-4. **The one-time consent step must happen on Vinoth's own machine, not this one** —
-   it's his Gmail login, see D12. There, with `.env` pointing `GMAIL_OAUTH_CLIENT_PATH`
-   at that file, run `npm run authorize -w @jobops/inbox`, open the printed URL signed
-   into `gopir525@gmail.com`, approve. That writes `GMAIL_TOKEN_PATH`
-   (`data/.gmail-token.json` by default — already gitignored).
+### Google Chat still needs a space (auth is fixed, see D16)
+Code-complete and its auth mechanism now works under this org's policies — see D16 in
+[03-decisions.md](03-decisions.md). What's left:
+1. `gcloud auth application-default login --impersonate-service-account=<email>` on
+   whatever machine runs the API (once; the service account itself already needs to
+   exist with Chat API access — check whether `jobservice@jobhunter-508210` already
+   does, per the comment in `packages/chat/src/google.ts`).
+2. Create/pick a Chat space, add the app to it, add Vinoth as a member. The space ID
+   (`spaces/AAAA...`) is `GCHAT_SPACE_ID` — currently unset.
+3. **Receiving button-click replies needs a public HTTPS URL** — Google can't call back
+   to `localhost:4000`. Set `GCHAT_WEBHOOK_SECRET` to any random string for local
+   testing (shared-secret path instead of a real Google-signed JWT), and something like
+   ngrok or Cloudflare Tunnel to expose the API. `GCHAT_PROJECT_NUMBER` is the real-JWT
+   path for whenever this has a stable public address instead.
 
-**For Google Chat (steps 5–6, code already built, never run for real):**
-1. Same Cloud project: enable the **Google Chat API**.
-2. In the Chat API's Configuration page, name the app, and under "App status" pick how
-   it authenticates — create a **service account**, download its JSON key. That path
-   is `GCHAT_SERVICE_ACCOUNT_JSON_PATH`.
-3. Create (or pick) a Chat space, add the bot/app to it, add Vinoth as a member so he
-   can see and answer approval cards. The space ID (`spaces/AAAA...`) is
-   `GCHAT_SPACE_ID`.
-4. **Receiving button-click replies needs a public HTTPS URL** — Google can't call back
-   to `localhost:4000`. For now, set `GCHAT_WEBHOOK_SECRET` to any random string (the
-   webhook accepts a shared secret locally instead of a real Google-signed JWT) and use
-   something like ngrok or Cloudflare Tunnel to expose the API temporarily for testing.
-   `GCHAT_PROJECT_NUMBER` (Cloud Console → Project Settings) is the real-JWT path for
-   whenever this has a stable public address instead.
-
-None of this needs Vinoth's Gmail login except step 4 of the Gmail checklist.
+### A "v3" redesign exists as a proposal, not a decision
+[docs/V3-SparkFlow.md](../docs/V3-SparkFlow.md) — replace Postgres/ATS-adapters with a
+Google Sheet + Gemini Spark + Apps Script + Vercel dashboard + Claude/playwright-cli
+applier. See [01-completed.md](01-completed.md) for what exists of it (a draft Apps
+Script under test, nothing deployed). **Whoever picks this thread back up needs to
+decide: keep building v2 (discovery/evaluator/inbox all work; nothing applies yet), or
+pursue v3.** The doc's own §11 build order names step 2 ("configure Spark, watch one
+overnight run") as the gate — if Spark can't run unattended, v3 reverts to v2's
+adapters for discovery anyway, so that's the cheapest way to find out which path is
+actually available.
 
 ### ~~The repo exists in exactly one place~~ — resolved, now public (intentional)
 Pushed 2026-09-10 to `github.com/buildhub20-source/Job-Hunter`. Backed up off this one

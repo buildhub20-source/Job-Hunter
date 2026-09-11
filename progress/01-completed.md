@@ -153,6 +153,62 @@ email into a posting yet.
   on **Vinoth's own machine**, not this one — it's his Gmail login, see D12. See
   [04-open-items.md](04-open-items.md) for the full checklist, shared with Google Chat's.
 
+## Step 9 (continued) — Gmail live, boards expanded, a real geography bug, Chat auth fixed
+
+Picked up after a restart interrupted the session mid-way through; reconstructed from
+the working tree rather than from memory, so this entry is about what the files and
+database show, not a blow-by-blow account.
+
+- ✅ **Gmail OAuth actually completed.** `secrets/client_secret.json` and
+  `secrets/.gmail-token.json` exist, `.env` points `GMAIL_OAUTH_CLIENT_PATH` /
+  `GMAIL_TOKEN_PATH` at them. Step 9 is no longer blocked on credentials — whether the
+  one-time consent happened on Vinoth's own machine per D12 isn't something this
+  session can verify from the filesystem; take it as done rather than re-litigate it.
+- ✅ **`data/boards.md` grew from 3 enabled boards to 13.** Added `project44` (Vinoth
+  already has a tailored resume for it — [data/policies/resumes.md](../data/policies/resumes.md)
+  — but it was never in the registry) plus 9 more India-focused product/tech companies
+  found by probing Greenhouse/Lever directly: `zenoti`, `highradius`, `observeai`,
+  `groww`, `cred`, `meesho`, `netskope`, `rubrik`, `mindtickle`. Two near-hits (`clear`,
+  `slice`) were the *wrong* companies on inspection — a US identity-verification firm
+  and a US pizza-ordering platform, not ClearTax or the Indian fintech Slice — left out
+  rather than added on a tenant-name coincidence.
+- ✅ **A real bug in the geography hard gate, found while verifying the new boards.**
+  `packages/adapters` already resolves a posting's `country` correctly (an India-cities
+  list recognizes "Bengaluru" as India even when the text never says "India"), and
+  stores it on the jobcard — but `packages/evaluator/src/hardgates.ts` ignored that
+  field and re-derived country from the raw location strings with a naive substring
+  check, so `["Bengaluru"]` didn't match "india" and got wrongly skipped as
+  out-of-geography. Three already-evaluated Razorpay jobs had this exact wrong verdict;
+  corrected in the database (evaluation deleted, state reset to `DISCOVERED`) and
+  re-evaluated — all three now correctly reach stage 2 and get judged on merit (still
+  SKIP, but for being HR/finance roles, not for a phantom geography failure). Added a
+  regression test for this exact case.
+- ✅ **Google Chat's auth mechanism changed from a service-account key file to
+  Application Default Credentials with impersonation** — `packages/chat/src/google.ts`
+  no longer takes a key-file path at all. The org enforces
+  `iam.disableServiceAccountKeyCreation`, which blocks step 2 of the Google Chat
+  checklist below as originally written (downloading a service-account JSON key isn't
+  possible under that policy). The fix: `gcloud auth application-default login
+  --impersonate-service-account=<service-account-email>` once, and `GoogleAuth` from
+  `google-auth-library` handles token refresh from there. `GCHAT_SPACE_ID` is still
+  unset — no Chat space created yet, so this is fixed but not yet exercised for real.
+- ✅ **A Funnel page and `/api/funnel` route** — discovered → evaluated → eligible,
+  broken down by which hard gate (or the LLM) rejected each job, with the raw rejection
+  reasons grouped and counted. `/api/jobs` also gained `?eligible=1`, since an eligible
+  job is usually older than the newest-200-by-discovery-time window the page showed
+  before.
+- 📄 **A "v3" redesign proposal exists**, written but explicitly marked "design, not
+  built": [docs/V3-SparkFlow.md](../docs/V3-SparkFlow.md) — Gemini Spark for discovery,
+  a Google Sheet as the single source of truth instead of Postgres, Apps Script for
+  gates and enrichment, a Vercel dashboard, Claude + playwright-cli as the applier. It
+  explicitly keeps v2's adapters as a fallback discovery source and reuses
+  `data/personal.md`/resumes/targeting policy. A draft Apps Script
+  (`v3/appsscript/Code.gs`) exists and is under active testing (`secrets/test-rows.json`
+  has deliberately-malformed fixture rows — a duplicate, a double-gate case). **Nothing
+  in v3 has been decided or built against the real system** — no Sheet created, no
+  Spark configured, no Apps Script deployed. Whether to pursue it is an open question
+  for whoever picks this up next, not settled by anything in this file.
+
 ## Steps 1–4 — Foundation · commit `df5c37f`
 
 **Monorepo.** npm workspaces (not pnpm — nothing extra to install), TypeScript
