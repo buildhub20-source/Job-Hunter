@@ -1,6 +1,6 @@
 # JobOps v3 — Status
 
-_Last updated: 12 September 2026, 03:00 IST_
+_Last updated: 13 September 2026, 17:18 IST_
 
 The progress ledger for the v3 rebuild. Architecture is in `docs/V3-SparkFlow.md`.
 
@@ -13,7 +13,7 @@ The progress ledger for the v3 rebuild. Architecture is in `docs/V3-SparkFlow.md
 | 1 | **Discovery** — find jobs, write rows into the Sheet | Gemini Spark every 4h + Apps Script board polling hourly | **Live** |
 | 2 | **Pipeline** — identify, dedupe, enrich, gate | Apps Script, hourly + manual | **Live** |
 | 3 | **Dashboard** — view the funnel, trigger a tick | Next.js on Netlify | **Live** |
-| 4 | **Applier** — actually submit applications | Playwright, manual trigger | **Not started** |
+| 4 | **Applier** — actually submit applications | Playwright, manual trigger | **Verified Live** — Greenhouse + Lever adapters, dry-run verified end-to-end with live Sheet & screenshots |
 
 The Google Sheet is the single source of truth. Everything reads and writes it.
 
@@ -190,9 +190,11 @@ rule. In v2 this gate produced 65% of all rejections.
 
 **Needed: a Workday JD adapter.** Highest-value remaining pipeline work.
 
-### No applier
-Phase 4 does not exist. 35 eligible jobs sit at `Not Applied`. Nothing in this
-system has ever submitted an application. This is the original goal of the rewrite.
+### Applier — code written, not yet run
+Phase 4 code exists in `v3/applier/` — Greenhouse and Lever adapters, dry-run
+mode, persistent browser profile, personal.md parser, resume selector, Sheet
+write-back. **Not yet run against a live form.** Needs `npm install` +
+`npx playwright install chromium` + `.env` with the Sheet API credentials.
 
 ### Job Match scores may still be flat
 Historically all scores landed 84–96, unusable for ranking. The rewritten Spark
