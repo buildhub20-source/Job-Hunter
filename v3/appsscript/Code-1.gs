@@ -635,3 +635,23 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(out))
     .setMimeType(ContentService.MimeType.JSON);
 }
+
+/* ------------------------------------------------ JD one-click diagnostics */
+/* Real links from the Jobs tab, one per ATS. debugJd takes arguments and the
+   Run button cannot supply any, so these wrappers exist for the dropdown. */
+
+function testJdAutodesk() {   // Workday, tenant in the host
+  debugJd('https://autodesk.wd1.myworkdayjobs.com/en-US/Ext/job/Software-Engineer_26WD96707-1');
+}
+function testJdVeradigm() {   // Workday, different tenant + site
+  debugJd('https://veradigm.wd12.myworkdayjobs.com/en-US/VR/job/Software-Engineer--Java-_JR10599');
+}
+function testJdLever() {
+  debugJd('https://jobs.lever.co/mindtickle/b6e024c2-42c2-463c-8bc8-ca0aa0826845');
+}
+function testJdAshby() {
+  debugJd('https://jobs.ashbyhq.com/tekion/e23792bd-a9ee-4dfe-8223-9c0b9fe90f05');
+}
+function testJdSmartRecruiters() {
+  debugJd('https://jobs.smartrecruiters.com/unacademy/743999672726735');
+}

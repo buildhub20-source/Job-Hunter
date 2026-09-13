@@ -64,10 +64,12 @@ lands on the Updates page rather than being attached to the wrong job.
 
 ---
 
-## Step 10 — Adapter health page
+## Step 10 — Adapter health page (done, 2026-09-13)
 
-Wire the existing table to the dashboard: status, last success, 24h/7d rates, affected
-jobs. Mostly display; the recording already happens in discovery.
+Built and typechecked — see [01-completed.md](01-completed.md). New route
+`GET /api/adapters/health` with rich data (status, rates, affected jobs, per-board
+breakdown, event timeline). Dashboard page rewritten from raw table to full health view.
+Not yet run against live Postgres.
 
 ---
 

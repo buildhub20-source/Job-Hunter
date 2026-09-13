@@ -209,6 +209,32 @@ database show, not a blow-by-blow account.
   Spark configured, no Apps Script deployed. Whether to pursue it is an open question
   for whoever picks this up next, not settled by anything in this file.
 
+## Step 10 — Adapter health page, 2026-09-13
+
+Wired the existing `adapters` and `adapter_health_events` tables to a proper dashboard
+page. The data recording already happened in discovery
+([`ingest.ts`](../packages/discovery/src/ingest.ts)); this step surfaces it usefully.
+
+**API:** New route file `apps/api/src/routes/adapterHealth.ts` with
+`GET /api/adapters/health` returning:
+- Current adapter rows (status, timestamps, rates)
+- Last 50 health events for timeline display
+- Per-adapter affected job counts (joined through `ats_tenants`)
+- Per-board breakdown (employer + tenant + job count + last discovery time)
+- Recomputes the previously-always-NULL `success_rate_24h` and `success_rate_7d`
+  columns on each call by aggregating `adapter_health_events`
+
+**Dashboard:** Replaced the minimal 29-line raw-table dump with a full page:
+summary stat cards (total adapters, healthy, degraded/broken, total jobs),
+per-adapter cards with status badges, timestamps, success rate bars, last error,
+and per-board breakdown tables, plus a health event timeline at the bottom.
+Auto-refreshes every 10 seconds matching the Overview page pattern.
+
+- ✅ `npm run typecheck` — clean across all 12 workspaces, zero errors.
+- ❌ Not run against live Postgres yet — needs `npm run db:up && npm run dev`.
+
+---
+
 ## Steps 1–4 — Foundation · commit `df5c37f`
 
 **Monorepo.** npm workspaces (not pnpm — nothing extra to install), TypeScript

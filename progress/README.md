@@ -5,11 +5,11 @@ Update it at the end of every working session.
 
 | | |
 | --- | --- |
-| **Last updated** | 2026-09-11 |
+| **Last updated** | 2026-09-13 |
 | **Commits** | 8 (more uncommitted — see below) |
 | **Source files** | 116+ |
 | **Packages** | shared · db · profile · chat · approvals · adapters · discovery · evaluator · llm · inbox |
-| **Build steps done** | 1–9 of 17 |
+| **Build steps done** | 1–10 of 17 |
 | **Tests** | 84 written · **84 executed and passing** |
 | **Typecheck** | clean across all 12 workspaces |
 | **Ever run end to end** | **Yes** — Postgres, discovery (13 boards), evaluator, all run against live data. Gmail credentials exist but the scan hasn't been run live yet this session. |
