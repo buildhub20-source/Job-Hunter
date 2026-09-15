@@ -5,10 +5,7 @@ import type { Job } from './types.js';
  * Reads eligible jobs and writes status back after an application attempt.
  */
 
-export async function fetchEligibleJobs(
-  apiUrl: string,
-  token: string,
-): Promise<Job[]> {
+export async function fetchJobs(apiUrl: string, token: string): Promise<Job[]> {
   const res = await fetch(`${apiUrl}?token=${encodeURIComponent(token)}`, {
     cache: 'no-store',
   });
@@ -22,13 +19,26 @@ export async function fetchEligibleJobs(
     );
   }
   if (payload.error) throw new Error(`Sheet API error: ${payload.error}`);
+  return payload.jobs ?? [];
+}
 
-  const jobs = payload.jobs ?? [];
-
-  // Filter to eligible: Status = "Not Applied" AND Gate Result = "Pass"
-  return jobs.filter(
+/** Status = "Not Applied" AND Gate Result = "Pass". */
+export async function fetchEligibleJobs(apiUrl: string, token: string): Promise<Job[]> {
+  return (await fetchJobs(apiUrl, token)).filter(
     (j) => j['Status'] === 'Not Applied' && j['Gate Result'] === 'Pass',
   );
+}
+
+/**
+ * Put a Blocked job back in the queue once every question it was blocked on has an
+ * answer. Never one whose submit was already clicked — that needs a human to check.
+ */
+export async function requeueIfBlocked(apiUrl: string, token: string, jobId: string): Promise<boolean> {
+  const job = (await fetchJobs(apiUrl, token)).find((j) => j['Job ID'] === jobId);
+  if (!job || job['Status'] !== 'Blocked' || String(job['Notes'] ?? '').startsWith('SUBMIT CLICKED')) {
+    return false;
+  }
+  return writeStatus(apiUrl, token, jobId, 'Not Applied', 'Answers received in Discord — ready to retry');
 }
 
 /**

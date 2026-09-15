@@ -74,9 +74,10 @@ submitting live applications on Aptean hardware is not — see D12.
 
 | Item | Why it matters |
 | --- | --- |
-| **US sponsorship** — does he hold US citizenship or a green card? | Settles `requires_sponsorship_us`. If no, the honest answer is Yes; see D8. |
+| ~~**US sponsorship**~~ | Resolved 2026-09-13: no US status, so sponsorship `yes`, authorized `no` — see D8. |
+| **Read the rewritten technical essay** | `hard_technical_problem_essay` was rewritten from resume facts on 2026-09-15 and set `approved=no` (D18). Until he approves it, essay questions about a hard technical problem park the job. |
 | **Date of birth format** — is `08/12/2003` 8 December? | Stored as 2003-12-08. Wrong on a form is worse than absent. |
-| **Travel percentage** | Currently 25%, marked `source=default` — Claude's choice, not his answer. It's a real commitment if asked at interview. |
+| **Travel percentage** | Currently 25%, marked `source=default` — Claude's choice, not his answer. The applier asks instead of submitting it (D18) until he gives a real number. |
 | **Walk-away CTC** | `minimum_ctc` is 600000, equal to the ask. If he'd take 5.75L for the right role, the gate is currently deleting those jobs. |
 | **Chat space membership** | He answers his own approval cards, so he needs to be in the space. |
 
@@ -90,6 +91,9 @@ submitting live applications on Aptean hardware is not — see D12.
 | ~~LLM API key~~ | Not currently needed — step 8 runs on Pro/Max, see D14 |
 | Google Cloud project + OAuth client + service account (checklist above) | Step 9 and real Google Chat (stub works meanwhile) |
 | A public HTTPS URL (ngrok/Cloudflare Tunnel or real hosting) | Google Chat button replies specifically |
+| `DISCORD_ALLOWED_USER_IDS` in `v3/applier/.env` | Two-way Discord prompts. Answers are now accepted only from these user IDs; empty means the applier refuses answers and parks the job instead. |
+| Fix one Sheet row: First Citizens Bank, `Status` is a zero-width space | That row is invisible to the applier (not "Not Applied") and to the dashboard counts. Nothing validates Status values on write. |
+| Which `netlify.toml` Netlify actually reads | There are two: repo root (sets `base = "v3/dashboard"`) and `v3/dashboard/`. Delete the one that isn't used, so a future edit doesn't land in the dead one. |
 
 ---
 

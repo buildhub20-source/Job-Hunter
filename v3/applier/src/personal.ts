@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { splitRow, isSeparator } from './markdown.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -23,31 +24,28 @@ export async function loadPersonalFacts(
   const raw = await readFile(filePath, 'utf-8');
 
   const facts = new Map<string, string>();
-  const lines = raw.split('\n');
+  let inFactTable = false;
 
-  for (const line of lines) {
-    // Match markdown table rows: | key | value | source | approved | ... |
-    if (!line.startsWith('|')) continue;
-    const cells = line
-      .split('|')
-      .map((c) => c.trim())
-      .filter(Boolean);
-    if (cells.length < 4) continue;
+  for (const line of raw.split(/\r?\n/)) {
+    const cells = splitRow(line);
+    if (!cells) {
+      inFactTable = false;
+      continue;
+    }
+    if (cells[0] === 'key' && cells[1] === 'value') {
+      inFactTable = true;
+      continue;
+    }
+    if (!inFactTable || isSeparator(cells)) continue;
 
-    const [key, value, _source, approved, _approvedAt, expiresAt] = cells;
-
-    // Skip header/separator rows
-    if (key === 'key' || key.startsWith('---') || key === '---') continue;
-
-    // Only approved facts
-    if (approved !== 'yes') continue;
-
-    // Skip empty / UNKNOWN
+    // Positional, so empty cells must survive: approved_at is often blank, and
+    // dropping it would read expires_at from the sensitivity column.
+    const [key, value, , approved, , expiresAt] = cells;
+    if (!key || approved !== 'yes') continue;
     if (!value || value === 'UNKNOWN') continue;
 
-    // Skip expired
-    if (expiresAt && expiresAt.trim()) {
-      const exp = new Date(expiresAt.trim());
+    if (expiresAt) {
+      const exp = new Date(expiresAt);
       if (!isNaN(exp.getTime()) && exp < new Date()) continue;
     }
 

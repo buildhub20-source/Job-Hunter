@@ -3,3 +3,5 @@ dist/
 .browser-profile/
 screenshots/
 .env
+submitted.jsonl
+answers.json

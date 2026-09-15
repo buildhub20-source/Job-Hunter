@@ -221,8 +221,10 @@ page. The data recording already happened in discovery
 - Last 50 health events for timeline display
 - Per-adapter affected job counts (joined through `ats_tenants`)
 - Per-board breakdown (employer + tenant + job count + last discovery time)
-- Recomputes the previously-always-NULL `success_rate_24h` and `success_rate_7d`
-  columns on each call by aggregating `adapter_health_events`
+- `success_rate_24h` and `success_rate_7d` aggregated from `adapter_health_events` at read
+  time. (The first version ran an `UPDATE adapters` inside this GET — every 10 seconds
+  per open tab; replaced in the 2026-09-15 review with the same aggregation in the SELECT.
+  The response shape is unchanged.)
 
 **Dashboard:** Replaced the minimal 29-line raw-table dump with a full page:
 summary stat cards (total adapters, healthy, degraded/broken, total jobs),
@@ -232,6 +234,63 @@ Auto-refreshes every 10 seconds matching the Overview page pattern.
 
 - ✅ `npm run typecheck` — clean across all 12 workspaces, zero errors.
 - ❌ Not run against live Postgres yet — needs `npm run db:up && npm run dev`.
+
+---
+
+## Review of the v3 applier and 2026-09-11–13 commits, 2026-09-15
+
+Five commits (`8e6d0b0`…`80eb094`, ~6,000 lines) plus uncommitted work were reviewed
+against the project's own rules. The applier was the priority: it submits real
+applications under Vinoth's name. The Sheet showed no row `Applied`, so none of the
+bugs below reached an employer.
+
+**Field matching** (`v3/applier/src/fields.ts`, new, shared by both adapters). One
+first-match-wins pattern list, copied into two adapters that had drifted apart. A probe
+against realistic labels misrouted all eight tested:
+- "What are your salary expectations?" / "Expected CTC" → **current** CTC (5L, not 8L)
+- "Notice period" → the consent-checkbox branch, left blank but counted as filled
+- "How did you hear… (LinkedIn, website)" → the LinkedIn URL
+- "authorized to work in India? Please state your visa status" → home **state**
+- "why you would require sponsorship to work in the US" → the generic "why us" essay
+- "percentage of time … travel" → CGPA; "Describe your experience…" essay → "2.2"
+- Lever answered "Are you authorized to work?" with the *requires sponsorship* fact —
+  an inverted answer — and had none of Greenhouse's US handling.
+
+Now ordered specific-to-generic with field-type limits, and a country-less work
+authorisation question answered only for an India-located role (D8, D18).
+
+**Other applier fixes**
+- `personal.ts` dropped empty table cells, so `expires_at` was read from the
+  `sensitivity` column — an expired fact still loaded; escaped pipes split values.
+- A submit with no confirmation was written `Applied`, and "thank you" anywhere on the
+  page counted as confirmation. Now `Blocked` for a human to check (D19).
+- A failed Sheet write-back after a submit left the row "Not Applied" → re-applied next
+  run. Now every submit is recorded in `submitted.jsonl` first and skipped on later runs.
+- `Blocked` was never written back in live mode, so blocked jobs were retried and
+  re-notified every run. `--limit abc` meant no limit.
+- A select whose options lack a `value` attribute was set to the blank placeholder
+  while reported filled — found by a dry run against a local fixture form, not by
+  reading the code. Resume uploads could land in the cover-letter slot.
+- Hardcoded "No"/"Yes" answers (non-compete, previously worked here, "are you willing…")
+  now ask a human (D18). The travel-percentage placeholder is asked, not submitted.
+- Discord answers were accepted from anyone in the channel; now only
+  `DISCORD_ALLOWED_USER_IDS`. One notification per blocked job instead of one per field.
+- The resume fallback now comes from `data/policies/resumes.md` (`amazon.pdf`) instead
+  of a hardcoded `base.pdf` — the policy and D10 had said amazon all along.
+
+**Data:** `hard_technical_problem_essay` claimed work not on the resume; rewritten from
+resume facts and set unapproved (D18).
+
+**Repo:** removed the committed `Claude outputs/` folder (stale duplicates) and
+`v3/appsscript/Code-1.gs` (a copy of `Code.gs` plus five diagnostics, now merged into
+`Code.gs` — both in one Apps Script project would declare every function twice).
+
+**Left as decided:** the v3 dashboard stays unauthenticated (D17).
+
+- ✅ Applier: 23 tests (field routing, fact loading, resume policy), typecheck clean.
+- ✅ Greenhouse adapter dry-run and submit path exercised against a local fixture form
+  — no job portal touched, per D12.
+- ❌ Not run against a real ATS form after these changes.
 
 ---
 

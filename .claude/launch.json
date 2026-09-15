@@ -13,6 +13,12 @@
       "runtimeArgs": ["run", "dev:dashboard"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "v3-dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "v3/dashboard", "run", "dev"],
+      "port": 3001
     }
   ]
 }

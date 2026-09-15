@@ -1,15 +1,42 @@
 #!/usr/bin/env node
 import 'dotenv/config';
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { existsSync, readFileSync, appendFileSync } from 'node:fs';
 import { loadPersonalFacts } from './personal.js';
-import { pickResume } from './resume.js';
-import { fetchEligibleJobs, writeStatus } from './sheet.js';
+import { resumeForJob, stageResume } from './resume.js';
+import { fetchEligibleJobs, writeStatus, requeueIfBlocked } from './sheet.js';
+import { AnswerStore } from './questions.js';
+import { collectAnswers } from './discord.js';
 import { Browser } from './browser.js';
 import { getAdapter, SUPPORTED_ATS } from './adapters/index.js';
 import type { Job, ApplyOptions } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Every job whose submit button was clicked, one JSON line each. Written before the
+ * Sheet write-back: if that write fails the Sheet still says "Not Applied", and
+ * without this file the next run would apply to the same job a second time.
+ */
+const LEDGER = resolve(__dirname, '..', 'submitted.jsonl');
+
+function loadSubmitted(): Set<string> {
+  if (!existsSync(LEDGER)) return new Set();
+  return new Set(
+    readFileSync(LEDGER, 'utf-8')
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => (JSON.parse(line) as { jobId: string }).jobId),
+  );
+}
+
+function recordSubmitted(job: Job, status: string, notes: string): void {
+  appendFileSync(
+    LEDGER,
+    JSON.stringify({ jobId: job['Job ID'], company: job['Company Name'], role: job['Role'], status, notes, at: new Date().toISOString() }) + '\n',
+  );
+}
 
 /* ── CLI args ─────────────────────────────────────────────────────── */
 
@@ -34,9 +61,17 @@ function parseArgs() {
       case '--job-id':
         opts.jobId = args[++i] ?? null;
         break;
-      case '--limit':
-        opts.limit = parseInt(args[++i] ?? '5', 10);
+      case '--limit': {
+        const raw = args[++i];
+        const n = Number(raw);
+        // A typo here must not turn into "no limit" while --submit is on.
+        if (!Number.isInteger(n) || n < 1) {
+          console.error(`❌ --limit needs a positive whole number, got "${raw ?? ''}"`);
+          process.exit(1);
+        }
+        opts.limit = n;
         break;
+      }
       case '--help':
       case '-h':
         opts.help = true;
@@ -97,6 +132,22 @@ async function main() {
   const personalFacts = await loadPersonalFacts();
   console.log(`   ${personalFacts.size} approved facts loaded`);
 
+  // Answers first: a job answered in Discord since the last run is filled with them now.
+  const answers = new AnswerStore();
+  try {
+    const got = await collectAnswers(answers, async (jobId) => {
+      if (await requeueIfBlocked(apiUrl, apiToken, jobId)) console.log(`   ↩️  ${jobId}: back in the queue`);
+    });
+    if (got.saved || got.rejected) {
+      console.log(`📥 Discord: ${got.saved} answer(s) saved, ${got.rejected} rejected, ${got.completed.length} job(s) fully answered`);
+    }
+    for (const who of new Set(got.ignoredAuthors)) {
+      console.log(`   🚫 Ignored a reply from ${who} — not in DISCORD_ALLOWED_USER_IDS`);
+    }
+  } catch (err) {
+    console.warn(`⚠️  Could not read Discord replies: ${err instanceof Error ? err.message : err}`);
+  }
+
   // Fetch eligible jobs
   console.log('📡 Fetching eligible jobs from Sheet...');
   let jobs = await fetchEligibleJobs(apiUrl, apiToken);
@@ -116,6 +167,17 @@ async function main() {
       );
       process.exit(1);
     }
+  }
+
+  const alreadySubmitted = loadSubmitted();
+  const resubmits = jobs.filter((j) => alreadySubmitted.has(j['Job ID']));
+  if (resubmits.length > 0) {
+    console.log(
+      `⏭️  Skipping ${resubmits.length} job(s) already submitted per submitted.jsonl ` +
+        `(the Sheet still says Not Applied — fix their Status by hand): ` +
+        resubmits.map((j) => j['Job ID']).join(', '),
+    );
+    jobs = jobs.filter((j) => !alreadySubmitted.has(j['Job ID']));
   }
 
   // Filter to supported ATSes first
@@ -181,8 +243,9 @@ async function main() {
         continue;
       }
 
-      const resumePath = pickResume(job['Company Name']);
-      console.log(`   📄 Resume: ${resumePath}`);
+      const variant = resumeForJob(job);
+      const resumePath = stageResume(variant.path, personalFacts.get('full_name') ?? '');
+      console.log(`   📄 Resume: ${basename(variant.path)} (${variant.source}) → uploaded as ${basename(resumePath)}`);
 
       const opts: ApplyOptions = {
         submit: args.submit,
@@ -192,6 +255,7 @@ async function main() {
         personalFacts,
         resumePath,
         browser,
+        answers,
       };
 
       const result = await adapter.apply(job, opts);
@@ -201,20 +265,19 @@ async function main() {
         console.log(`   → ${result.screenshots.length} screenshot(s) saved`);
       }
 
-      // Write status back (skip write-back for dry-run)
-      if (args.submit && result.status !== 'Blocked') {
-        const ok = await writeStatus(
-          apiUrl,
-          apiToken,
-          job['Job ID'],
-          result.status,
-          result.notes,
-        );
-        console.log(
-          ok
-            ? '   ✅ Status written to Sheet'
-            : '   ⚠️  Failed to write status to Sheet',
-        );
+      if (result.submitted) recordSubmitted(job, result.status, result.notes);
+
+      // Dry-run writes nothing. A live run writes every outcome, Blocked included —
+      // a Blocked job left as "Not Applied" is re-attempted, and re-notified, forever.
+      if (args.submit) {
+        const ok = await writeStatus(apiUrl, apiToken, job['Job ID'], result.status, result.notes);
+        if (ok) {
+          console.log('   ✅ Status written to Sheet');
+        } else if (result.submitted) {
+          console.log('   ⚠️  Failed to write status to Sheet — submitted.jsonl still prevents a re-apply');
+        } else {
+          console.log('   ⚠️  Failed to write status to Sheet');
+        }
       }
 
       switch (result.status) {

@@ -23,6 +23,7 @@ Rules:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | full_name | Vinoth M | resume | yes | 2026-09-09 |  | normal | as it appears on every resume variant |
 | preferred_name | Vinoth | resume | yes | 2026-09-09 |  | normal |  |
+| gender | Male | user | yes | 2026-09-15 |  | normal | for voluntary self-identification questions; given by the operator |
 | date_of_birth | 2003-12-08 | user | yes | 2026-09-09 |  | high | given as 08/12/2003, read as 8 December — CONFIRM the day/month order |
 
 ## contact
@@ -52,6 +53,7 @@ Rules:
 | primary_stack | .NET Core, ASP.NET Core, Node.js, React, AWS, microservices | resume | yes | 2026-09-09 |  | normal |  |
 | secondary_skills | Azure OpenAI, RAG, multi-agent AI, pgvector, Java, Spring Boot, Python | resume | yes | 2026-09-09 |  | normal |  |
 | databases | PostgreSQL, SQL Server, MySQL | resume | yes | 2026-09-09 |  | normal |  |
+| resume_highlights | At Aptean: built the microservice orchestrating all carrier API requests and responses across the logistics platform, serving 50K+ daily requests, and defined its system design, data flow and integration contracts for 15+ carriers; architected and shipped a RAG system on Azure OpenAI and pgvector that answers questions over carrier documentation, cutting engineer lookup time by about 60%; designed multi-agent AI workflows that parse carrier specs, generate mapping configs and trigger validation, cutting manual integration effort by about 70% per onboarding; led a metadata-driven carrier mapping system that removed about 40 hours a month of manual configuration and let non-engineers onboard carriers without code changes; delivered serverless carrier integrations on AWS Lambda (Node.js) with auto-scaling across regions; improved React Time-to-Interactive by 40% with code-splitting, memoization and lazy loading; resolved 20+ customer-reported issues across .NET Core, Node.js and React, wrote design docs and mentored new engineers on a 10+ engineer team. Projects: LinkedIn Content Agent, a 3-agent Planner, Writer and Reviewer pipeline on the Gemini API with LinkedIn OAuth publishing and approval gates; JobNest, a Spring Boot microservices job portal with React and Redux, JWT and RBAC, and indexed MySQL queries that cut search latency by about 35%; encrypted document storage on IPFS with AES-256 and Solidity hash verification behind an ASP.NET Core backend. Smart India Hackathon 2023 internal round qualifier; 400+ LeetCode problems; AWS Academy Cloud Foundations. | resume | yes | 2026-09-15 |  | normal | copied from base.pdf, nothing added — the only material generated answers may draw on (D20) |
 
 ## education
 
@@ -79,7 +81,8 @@ Rules:
 | citizenship | Indian | user | yes | 2026-09-09 |  | high |  |
 | authorized_to_work_india | yes | user | yes | 2026-09-09 |  | high |  |
 | requires_sponsorship_india | no | user | yes | 2026-09-09 |  | high | Indian citizen, no sponsorship needed to work in India |
-| requires_sponsorship_us | UNKNOWN | user | no |  |  | high | answered no twice, but that is only true if he holds US citizenship or a green card — BLOCKED until confirmed, see notes in README |
+| requires_sponsorship_us | yes | user | yes | 2026-09-13 |  | high | Indian citizen, requires visa sponsorship for US roles; confirmed via Discord |
+| authorized_to_work_us | no | user | yes | 2026-09-13 |  | high | Indian citizen, not authorized to work in US without visa/sponsorship |
 | passport_status | holds a valid passport | user | yes | 2026-09-09 |  | high |  |
 | willing_to_relocate | yes | user | yes | 2026-09-09 |  | normal | scope not specified — within India assumed by the geo policy |
 | travel_percentage_ok | 25 | default | yes | 2026-09-09 |  | normal | my default, not his answer — a real commitment if asked at interview |
@@ -91,4 +94,8 @@ Rules:
 | earliest_start_date | 30 days from offer | user | yes | 2026-09-09 |  | normal | matches the 30-day notice period |
 | willing_weekend_work | yes | user | yes | 2026-09-09 |  | normal |  |
 | background_check_consent | yes | user | yes | 2026-09-09 |  | high | blanket consent given; standard pre-employment check |
-| how_did_you_hear | UNKNOWN | user | no |  |  | low | varies per application |
+| how_did_you_hear | Company Website | user | yes | 2026-09-13 |  | low | standard answer selected by user |
+| hard_technical_problem_essay | At Aptean, engineers were spending a lot of time searching carrier documentation and feature specs by hand. I architected and shipped a RAG system on Azure OpenAI and pgvector (PostgreSQL) that answers questions over that documentation with context-aware responses, which reduced engineer lookup time by about 60%. I then built multi-agent AI workflows on Azure OpenAI in which agents parse carrier specs, generate mapping configurations and trigger validation, cutting manual integration effort by about 70% per carrier onboarding. | resume | no |  |  | normal | rewritten 2026-09-15 from resume facts only; the earlier draft claimed BM25 hybrid retrieval, a reranking layer and a 40% latency cut, none of which are on the resume. Vinoth to read and approve |
+| why_speechify_essay | I am deeply excited about Speechify's mission to make reading, learning, and information accessible through state-of-the-art voice and platform technology. With my background in backend microservices (.NET Core, Node.js), API design, and AI/RAG integrations, I thrive on building scalable, reliable distributed systems that power seamless user experiences. I want to bring my backend and platform engineering expertise to Speechify to help scale its services for millions of users worldwide. | user | yes | 2026-09-13 |  | normal | tailored for Speechify application |
+| why_company_generic | I am drawn to the opportunity to build robust, scalable backend systems that solve complex engineering challenges and deliver tangible user impact. With hands-on experience developing microservices, high-throughput APIs, and AI integrations in .NET and Node.js on cloud infrastructure, I take pride in writing resilient, maintainable code. I am excited to collaborate with your team to enhance platform reliability, optimize performance, and drive engineering excellence. | user | yes | 2026-09-13 |  | normal | generic company motivation essay |
+

@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "apply": "tsx src/cli.ts",
-    "typecheck": "tsc --noEmit"
+    "answers": "tsx src/answers.ts",
+    "report": "tsx src/report.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
+    "@anthropic-ai/claude-code": "2.1.267",
     "playwright": "^1.49.0",
     "dotenv": "^16.4.5"
   },

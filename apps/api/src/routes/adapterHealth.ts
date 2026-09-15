@@ -12,33 +12,17 @@ async function safe<T>(fn: () => Promise<T[]>): Promise<{ rows: T[]; dbDown: boo
 
 export async function adapterHealthRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/adapters/health', async () => {
-    // Recompute success rates from event history — these columns exist
-    // in the schema but recordHealth() in ingest.ts never populates them.
-    try {
-      await query(`
-        UPDATE adapters SET
-          success_rate_24h = sub.rate_24h,
-          success_rate_7d  = sub.rate_7d
-        FROM (
-          SELECT
-            a.id,
-            (SELECT AVG(ok::int::numeric) FROM adapter_health_events h
-             WHERE h.adapter_id = a.id AND h.created_at > now() - interval '24 hours') AS rate_24h,
-            (SELECT AVG(ok::int::numeric) FROM adapter_health_events h
-             WHERE h.adapter_id = a.id AND h.created_at > now() - interval '7 days') AS rate_7d
-          FROM adapters a
-        ) sub
-        WHERE adapters.id = sub.id
-      `);
-    } catch {
-      // Non-fatal — we still return whatever is stored
-    }
-
+    // Success rates come from the event history at read time. The stored
+    // success_rate_* columns are never written by recordHealth() in ingest.ts, and a
+    // GET that the dashboard polls every 10s must not write to fill them in.
     const { rows: adapters, dbDown } = await safe(() =>
-      query(`SELECT id, display_name, version, enabled, shadow_mode, status,
-                    last_check_at, last_success_at, last_failure_at,
-                    last_error_summary, success_rate_24h, success_rate_7d
-             FROM adapters ORDER BY id`),
+      query(`SELECT a.id, a.display_name, a.version, a.enabled, a.shadow_mode, a.status,
+                    a.last_check_at, a.last_success_at, a.last_failure_at, a.last_error_summary,
+                    (SELECT AVG(ok::int::numeric) FROM adapter_health_events h
+                      WHERE h.adapter_id = a.id AND h.created_at > now() - interval '24 hours') AS success_rate_24h,
+                    (SELECT AVG(ok::int::numeric) FROM adapter_health_events h
+                      WHERE h.adapter_id = a.id AND h.created_at > now() - interval '7 days') AS success_rate_7d
+             FROM adapters a ORDER BY a.id`),
     );
 
     if (dbDown) {

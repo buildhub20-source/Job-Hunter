@@ -1,5 +1,5 @@
 import { chromium, type BrowserContext, type Page } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -64,6 +64,28 @@ export class Browser {
     await page.screenshot({ path: filepath, fullPage: true });
     console.log(`  📸 ${label}: ${filepath}`);
     return filepath;
+  }
+
+  /**
+   * Keep a record of what a form held when filling finished: every field's value as
+   * the page shows it, and a screenshot of the form alone. `npm run report` turns these
+   * into one page to check before anything is submitted.
+   */
+  async saveFillRecord(
+    page: Page,
+    record: { jobId: string; company: string; role: string; applyLink: string; status: string; notes: string; values: unknown[] },
+    formSelectors: string[],
+  ): Promise<void> {
+    const safe = record.jobId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const base = resolve(this.screenshotDir, `${safe}_fill_${ts}`);
+    let form = null;
+    for (const selector of formSelectors) {
+      form = await page.$(selector);
+      if (form) break;
+    }
+    if (form) await form.screenshot({ path: `${base}.png` }).catch(() => {});
+    writeFileSync(`${base}.json`, JSON.stringify({ ...record, at: new Date().toISOString(), image: form ? `${base}.png` : null }, null, 2));
   }
 
   async close(): Promise<void> {

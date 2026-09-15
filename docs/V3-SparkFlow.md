@@ -262,7 +262,8 @@ source. Its `Funnel` page already renders exactly this gate breakdown.
 4. Fill from `data/personal.md`. **Never invent a value**: empty, `UNKNOWN`, or
    `approved=no` means park the job and ask
 5. Upload the right resume from `data/resumes/` — tailored variant if one exists
-   (`p44.pdf` for Project44), else `base.pdf`
+   (`p44.pdf` for Project44), else the policy's `default_resume` (`amazon.pdf`) —
+   `data/policies/resumes.md` decides both, per D10
 6. **Pause for human approval before submit**
 7. Write Status, Applied At and Notes back to the Sheet
 

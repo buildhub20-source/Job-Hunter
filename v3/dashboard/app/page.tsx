@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 type Job = Record<string, string>;
-type Tick = { at: string; identified: number; enriched: number; gated: number } | null;
+type Tick = { at: string; identified: number; enriched: number; gated: number; resumesMatched?: number } | null;
 type Payload = {
   generatedAt?: string;
   lastTick?: Tick;
@@ -112,11 +112,11 @@ export default function Page() {
           <button onClick={() => void load()} disabled={busy}>Refresh</button>
           <span className="note" style={{ marginTop: 0 }}>
             Last run {ago(d?.lastTick?.at)}
-            {d?.lastTick ? ` · ${d.lastTick.identified} identified, ${d.lastTick.enriched} enriched, ${d.lastTick.gated} gated` : ''}
+            {d?.lastTick ? ` · ${d.lastTick.identified} identified, ${d.lastTick.enriched} enriched, ${d.lastTick.gated} gated${d.lastTick.resumesMatched != null ? `, ${d.lastTick.resumesMatched} resumes matched` : ''}` : ''}
           </span>
         </div>
         <p className="note">
-          Runs normalize → enrich → gate. It cannot start a Spark discovery run (Spark has no API —
+          Runs normalize → enrich → gate → match resumes. It cannot start a Spark discovery run (Spark has no API —
           use Gemini, or wait for the 4-hour schedule) or the applier (Playwright runs locally).
           {d?.triggers?.length ? ` Triggers installed: ${d.triggers.map((x) => x.fn).join(', ')}.` : ''}
         </p>
@@ -152,12 +152,13 @@ export default function Page() {
             <thead>
               <tr>
                 <th>Company</th><th>Role</th><th>Location</th><th>Salary</th>
-                <th>ATS</th><th>Match</th><th>Gate</th><th>Status</th><th>Link</th>
+                <th>ATS</th><th>Match</th><th>Gate</th><th>Resume</th><th>Status</th><th>Link</th>
               </tr>
             </thead>
             <tbody>
-              {shown.map((j) => (
-                <tr key={j['Job ID'] || j['Apply Link']}>
+              {/* Duplicates share a Job ID (they stay in the sheet as Skipped), so the row number is part of the key. */}
+              {shown.map((j, i) => (
+                <tr key={`${j['Job ID'] || j['Apply Link']}#${i}`}>
                   <td className="title">{j['Company Name']}</td>
                   <td>{j['Role']}</td>
                   <td>{j['Location']}</td>
@@ -167,12 +168,18 @@ export default function Page() {
                   <td style={{ color: j['Gate Result'] && j['Gate Result'] !== 'Pass' ? 'var(--serious)' : undefined }}>
                     {j['Gate Result'] || '—'}
                   </td>
+                  <td title={j['Resume Match'] || undefined}>
+                    {j['Resume'] || '—'}
+                    {j['Resume Match'] && (
+                      <div className="note" style={{ marginTop: 2 }}>{String(j['Resume Match']).slice(0, 48)}</div>
+                    )}
+                  </td>
                   <td><Pill value={j['Status']} /></td>
                   <td>{j['Apply Link'] ? <a href={j['Apply Link']} target="_blank" rel="noreferrer">open</a> : '—'}</td>
                 </tr>
               ))}
               {shown.length === 0 && (
-                <tr><td colSpan={9} style={{ color: 'var(--ink-3)' }}>Nothing matches those filters.</td></tr>
+                <tr><td colSpan={10} style={{ color: 'var(--ink-3)' }}>Nothing matches those filters.</td></tr>
               )}
             </tbody>
           </table>

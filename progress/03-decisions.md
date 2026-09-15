@@ -46,6 +46,12 @@ background check, after an offer, and the consequences land on Vinoth. Left unkn
 geo policy (India plus remote roles hiring India-based candidates) means the question
 essentially never fires. If it does, Vinoth answers it himself in Chat.
 
+**Resolved 2026-09-13:** Vinoth confirmed he holds no US status, so `requires_sponsorship_us`
+is `yes` and `authorized_to_work_us` is `no` — the honest answers this decision called for.
+The applier answers these only for a question that names the US; a country-less
+"require sponsorship?" uses the India facts only for an India-located role, and asks a
+human for anything else (D18).
+
 ### D9 — Expected CTC raised 600000 to 800000
 Current 5L, ask 8L, walk-away floor 6L. Previously the ask and the floor were both 6L,
 leaving no negotiating room while under-pricing a profile with production RAG and
@@ -130,3 +136,67 @@ impersonation instead: `gcloud auth application-default login
 leak if the repo is public (see D13). `GoogleChatTransport` no longer takes a
 key-path argument at all — `createTransport` now creates it whenever `GCHAT_SPACE_ID`
 is set, regardless of any service-account-path env var.
+
+### D17 — The v3 dashboard stays unauthenticated, on purpose
+The Netlify dashboard proxies `/api/jobs` and `/api/tick` with no login. The Sheet token
+never reaches the browser, but anyone with the URL can read every row and trigger a
+pipeline run, which spends Apps Script quota. Raised in the 2026-09-15 review with a
+password-middleware option; the operator chose to leave it open. Not an oversight to
+fix on a later pass unless told otherwise.
+
+### D18 — The applier asks; it never assumes an answer
+A form question maps to an approved `personal.md` fact or goes to a human (Discord,
+else the job parks as Blocked). That rules out hardcoded answers: "No" to non-compete
+and "previously worked here", "Yes" to "are you willing / comfortable / open to…" were
+removed on 2026-09-15 — they were commitments Vinoth never made. It also rules out
+guessing which country a question means; see D8. Essay answers in `personal.md` are
+held to the resume: the first `hard_technical_problem_essay` claimed a BM25 hybrid
+retriever, a reranker and a 40% latency cut, none of it on the resume, and was
+rewritten from resume facts and set unapproved until Vinoth reads it.
+
+### D19 — An unconfirmed submit is never "Applied", and never re-applied
+After the submit click, `Applied` requires evidence: a confirmation URL, or the form gone
+with confirmation text in its place. "Thank you" on the page isn't enough — job pages
+say it before anything is submitted. Anything short of that is written as Blocked with
+"SUBMIT CLICKED, NO CONFIRMATION" so a human checks the acknowledgement email. Every
+click is also recorded in `v3/applier/submitted.jsonl` before the Sheet write-back,
+because a failed write-back leaves the row "Not Applied" and the next run would apply to
+the same job twice.
+
+### D20 — Answers aim to advance the application; facts stay true
+Set by the operator on 2026-09-15: every answer should raise the chance of moving to the
+next stage. The applier holds that goal inside one boundary, because a false factual
+answer surfaces at the background check and costs the offer, not just the application:
+- **Factual questions** (sponsorship, work authorisation, notice period, past employment,
+  restrictive agreements, compensation) get the true answer or go to a human (D8, D18).
+- **Open-ended questions** no fact answers ("What does 'The Best Team Wins' mean to
+  you?", "Why this role?") get an answer written for that company by Claude through the
+  D14 CLI, told to persuade and to use **only** `resume_highlights` and the other
+  `personal.md` facts for any experience, number or tool it mentions. Opinions and values
+  are his to hold; invented experience is not.
+- The generic "why us" paragraph was dropped for this: one text pasted into every
+  application reads as boilerplate. Vinoth's own Speechify answer stays.
+- A written answer is stored per job in `answers.json`, so a live run submits exactly
+  what the dry run showed and the fill report tagged "Written — review".
+- The resume uploads as `Vinoth_M_Resume.pdf`: a variant name like `amazon.pdf` tells
+  every other employer it was written for someone else.
+
+### D21 — Each job gets the resume version its JD fits, by keywords in Apps Script
+Set by the operator on 2026-09-15. Before this every job without a tailored file got
+`amazon.pdf`, which leads with Java and underplays frontend — a poor fit for the
+full-stack roles that make up much of the queue. Now `v3/appsscript/Resumes.gs` picks
+per job and writes the Sheet's **Resume** and **Resume Match** columns (also shown on the
+dashboard), and the applier uploads that file.
+- Order: the employer's own tailored file → the version whose keywords the JD mentions
+  most by weight → the policy default `amazon`, which also wins ties.
+- Another version must out-score the default by 3 to replace it. Against the 27 passing
+  Greenhouse JDs without that margin, a single "frontend" or Celonis's EEO line about
+  "accessibility" accommodations switched resumes.
+- Keywords were read from the PDFs themselves and list only what each file says or leads
+  with; they choose a file and never add anything to it. They live in the Sheet's
+  Resumes tab so they can be tuned without a deploy (`rematchResumes()` after editing).
+- Keywords over an LLM ranking: free, instant, runs inside the hourly tick, and every
+  choice carries a readable reason. The versions differ in emphasis more than content,
+  which keywords capture well enough.
+- The applier still reads employer overrides from `data/policies/resumes.md` first, and
+  ignores a Resume value that names no file (the column is hand-editable).

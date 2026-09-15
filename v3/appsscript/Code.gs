@@ -5,8 +5,9 @@
  *
  * First run:
  *   1. setupSheet()      — creates the Jobs and Policies tabs
- *   2. installTriggers() — hourly + onChange
- *   3. Deploy > New deployment > Web app (Execute as me, Anyone with the link)
+ *   2. setupResumes()    — creates the Resumes tab (see Resumes.gs)
+ *   3. installTriggers() — hourly + onChange
+ *   4. Deploy > New deployment > Web app (Execute as me, Anyone with the link)
  *      then read the token with showToken()
  */
 
@@ -16,6 +17,7 @@ const POLICIES_SHEET = 'Policies';
 const JOB_HEADERS = [
   'Job ID', 'Company Name', 'Role', 'Location', 'Salary', 'Apply Link', 'ATS',
   'Job Match', 'Gate Result', 'Status', 'Applied At', 'Notes', 'JD Text', 'Discovered At',
+  'Resume', 'Resume Match',
 ];
 
 const SEED_POLICIES = [
@@ -37,6 +39,7 @@ function setupSheet() {
     jobs.getRange(1, 1, 1, JOB_HEADERS.length).setValues([JOB_HEADERS]).setFontWeight('bold');
     jobs.setFrozenRows(1);
   }
+  ensureJobColumns();
   // Markdown and URLs must never be parsed as formulas.
   jobs.getRange(1, 1, jobs.getMaxRows(), JOB_HEADERS.length).setNumberFormat('@');
 
@@ -65,6 +68,24 @@ function installTriggers() {
   ScriptApp.newTrigger('hourlyTick').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('onSheetChange').forSpreadsheet(ss).onChange().create();
   Logger.log('Triggers installed: hourly + onChange.');
+}
+
+/**
+ * Add any JOB_HEADERS column the sheet doesn't have yet, at the right-hand end. Sheets
+ * made before a column existed keep their data where it is; everything else finds
+ * columns by header name.
+ */
+function ensureJobColumns() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(JOBS_SHEET);
+  if (!sh || sh.getLastRow() === 0) return;
+  const have = headerIndex(sh);
+  const missing = JOB_HEADERS.filter(h => !(h in have));
+  if (!missing.length) return;
+  const col = sh.getLastColumn() + 1;
+  const needed = col + missing.length - 1 - sh.getMaxColumns();
+  if (needed > 0) sh.insertColumnsAfter(sh.getMaxColumns(), needed);
+  sh.getRange(1, col, 1, missing.length).setValues([missing]).setFontWeight('bold');
+  Logger.log('ensureJobColumns: added ' + missing.join(', '));
 }
 
 /* --------------------------------------------------------------- identity */
@@ -516,20 +537,24 @@ function hourlyTick() {
   const identified = normalizeRows();
   const enriched = enrichPending(40);
   const gated = applyGates();
+  let resumesMatched = 0;
+  try { resumesMatched = matchResumes(); } catch (e) { Logger.log('matchResumes failed: ' + e); }
   PropertiesService.getScriptProperties().setProperty('LAST_TICK', JSON.stringify({
     at: new Date().toISOString(),
     boardsPolled: sourced.polled || 0,
     sourcedNew: sourced.added || 0,
-    identified: identified, enriched: enriched, gated: gated,
+    identified: identified, enriched: enriched, gated: gated, resumesMatched: resumesMatched,
   }));
   Logger.log('hourlyTick: boards=' + (sourced.polled || 0) + ' sourced=' + (sourced.added || 0) +
-             ' identified=' + identified + ' enriched=' + enriched + ' gated=' + gated);
+             ' identified=' + identified + ' enriched=' + enriched + ' gated=' + gated +
+             ' resumes=' + resumesMatched);
 }
 
 function onSheetChange(e) {
   if (!e || (e.changeType !== 'INSERT_ROW' && e.changeType !== 'EDIT')) return;
   normalizeRows();
   applyGates();
+  try { matchResumes(); } catch (err) { Logger.log('matchResumes failed: ' + err); }
 }
 
 /* --------------------------------------------------------------- web API */
@@ -543,12 +568,13 @@ function doGet(e) {
   }
   const sh = SpreadsheetApp.getActive().getSheetByName(JOBS_SHEET);
   const last = sh.getLastRow();
-  const head = JOB_HEADERS;
-  const rows = last > 1 ? sh.getRange(2, 1, last - 1, head.length).getValues() : [];
+  const ix = headerIndex(sh);
+  const rows = last > 1 ? sh.getRange(2, 1, last - 1, sh.getLastColumn()).getValues() : [];
 
+  // By header name, not position: a sheet made before a column existed has it elsewhere.
   let jobs = rows.map(r => {
     const o = {};
-    head.forEach((h, i) => { o[h] = r[i]; });
+    JOB_HEADERS.forEach(h => { o[h] = h in ix ? r[ix[h]] : ''; });
     delete o['JD Text'];           // too large to ship to the dashboard
     return o;
   });
@@ -634,4 +660,24 @@ function doPost(e) {
   else out = { error: 'nothing to do' };
   return ContentService.createTextOutput(JSON.stringify(out))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ------------------------------------------------ JD one-click diagnostics */
+/* Real links from the Jobs tab, one per ATS. debugJd takes arguments and the
+   Run button cannot supply any, so these wrappers exist for the dropdown. */
+
+function testJdAutodesk() {   // Workday, tenant in the host
+  debugJd('https://autodesk.wd1.myworkdayjobs.com/en-US/Ext/job/Software-Engineer_26WD96707-1');
+}
+function testJdVeradigm() {   // Workday, different tenant + site
+  debugJd('https://veradigm.wd12.myworkdayjobs.com/en-US/VR/job/Software-Engineer--Java-_JR10599');
+}
+function testJdLever() {
+  debugJd('https://jobs.lever.co/mindtickle/b6e024c2-42c2-463c-8bc8-ca0aa0826845');
+}
+function testJdAshby() {
+  debugJd('https://jobs.ashbyhq.com/tekion/e23792bd-a9ee-4dfe-8223-9c0b9fe90f05');
+}
+function testJdSmartRecruiters() {
+  debugJd('https://jobs.smartrecruiters.com/unacademy/743999672726735');
 }
