@@ -1,6 +1,6 @@
 # JobOps v3 — Status
 
-_Last updated: 13 September 2026, 17:18 IST_
+_Last updated: 17 September 2026_
 
 The progress ledger for the v3 rebuild. Architecture is in `docs/V3-SparkFlow.md`.
 
@@ -12,8 +12,9 @@ The progress ledger for the v3 rebuild. Architecture is in `docs/V3-SparkFlow.md
 |---|-------|---------|-------|
 | 1 | **Discovery** — find jobs, write rows into the Sheet | Gemini Spark every 4h + Apps Script board polling hourly | **Live** |
 | 2 | **Pipeline** — identify, dedupe, enrich, gate | Apps Script, hourly + manual | **Live** |
-| 3 | **Dashboard** — view the funnel, trigger a tick | Next.js on Netlify | **Live** |
-| 4 | **Applier** — actually submit applications | Playwright, manual trigger | **Verified Live** — Greenhouse + Lever adapters, dry-run verified end-to-end with live Sheet & screenshots |
+| 3 | **Dashboard** — view the funnel, trigger a tick | Next.js on Netlify | **Live** (shows the chosen resume per job) |
+| 4 | **Resume matching** — pick one of 10 resume versions per job | Apps Script (`Resumes.gs`), in the hourly tick | **Live** since 2026-09-15 |
+| 5 | **Applier** — fill and submit applications | Playwright on this machine, manual trigger | **Dry run verified on 5 live Greenhouse forms.** Nothing submitted yet. Lever adapter written, not run live. |
 
 The Google Sheet is the single source of truth. Everything reads and writes it.
 
@@ -26,14 +27,19 @@ The Google Sheet is the single source of truth. Everything reads and writes it.
 
 ## 2. Current numbers
 
+As of 2026-09-17:
+
 ```
-TOTAL JOBS 43   ·   PASSED GATES 35   ·   NOT APPLIED 43   ·   APPLIED 0
+TOTAL JOBS 225   ·   PASSED GATES 177   ·   NOT APPLIED 211   ·   SKIPPED 13   ·   APPLIED 0
 ```
 
-Trimmed off by gates, with the reason recorded per row — the funnel is visible
-end to end for the first time.
-
-Sources of the 43: ~33 from Spark, ~11 from the board-polling layer.
+- **The experience gate fires now:** 23 rejections are "requires N+ years", thanks to
+  the Workday and Amazon JD adapters. The rest are title and location.
+- **Passing and not applied, by ATS:** other 69 · greenhouse 32 · smartrecruiters 20 ·
+  workday 18 · ashby 17 · blank 8. Only Greenhouse has a verified applier.
+- **Resume per passing job** (2026-09-15, 136 passing then): amazon 89 · paypal 21 ·
+  blueyonder 10 · angelone 3 · base 3 · amex 2 · p44 1. Rows without JD text (36)
+  get the default, amazon.
 
 ---
 
@@ -111,6 +117,51 @@ scraper, not this layer.**
 
 ---
 
+## 4b. The applier (`v3/applier`)
+
+Runs locally: `npm run apply` (dry run by default, `--submit` for live), with
+`--limit`, `--job-id` and `--headed`. The decisions behind it are D17–D21 in
+`progress/03-decisions.md`.
+
+**How a form gets filled**
+- `src/fields.ts` maps each label to a `personal.md` fact, ordered specific → generic
+  with field-type limits. Factual questions it can't answer truthfully go to a human (D18).
+- Dropdowns: exact or whole-word option match ("male" never picks "Female"), plus
+  synonyms ("Male" → "Man"). Long searchable lists (schools) fall back to "Other".
+- Open-ended questions ("What does 'The Best Team Wins' mean to you?") are written by
+  Claude through the Claude Code CLI on the Pro/Max login, from `personal.md` and
+  `resume_highlights` only, aimed at moving the application forward (D20). Written
+  answers are cached per job in `answers.json`, so a live run submits exactly what the
+  dry run showed.
+- Follow-up fields revealed by an answer ("Please specify") get a second pass.
+- The resume is the one in the Sheet's **Resume** column (the policy's employer file
+  wins), uploaded as `Vinoth_M_Resume.pdf` (D21).
+- Before a form counts as ready, every required field is read back from the page.
+
+**Questions for Vinoth, in Discord**
+- One message per blocked job, with the dropdown options listed. He replies to that
+  message (`1 Other`, `2 always Company Website`). Only `DISCORD_ALLOWED_USER_IDS` can
+  answer; `always` saves the answer for every future job.
+- `npm run answers [-- --watch]` collects replies after a run has ended, and puts the
+  job back in the queue once every question has an answer.
+
+**Checking the output**
+- `npm run report` writes `screenshots/fill-report.html`: every field, its value, where
+  the value came from ("Discord answer", "Written — review"), and the form screenshot.
+
+**Safety**
+- A submit counts as `Applied` only with a confirmation URL, or the form replaced by
+  confirmation text. Otherwise it is `Blocked` with "SUBMIT CLICKED, NO CONFIRMATION" (D19).
+- Every submit click is recorded in `submitted.jsonl` before the Sheet write, so a
+  failed write can't cause a second application.
+- Personal files stay gitignored: `.env`, `answers.json`, `submitted.jsonl`, `screenshots/`.
+
+**Verified 2026-09-15:** dry run on Speechify, Celonis, GitLab, Truveta and BitGo, all
+"ready to submit". The fill report was checked field by field (gender, preferred name,
+resume, education, written answers). 68 applier tests pass.
+
+---
+
 ## 5. Bugs found and fixed
 
 ### Policy values read as objects, not strings
@@ -167,6 +218,23 @@ Workday tenant domains rather than read from the Location column.
 **Diagnostic that worked:** build duration. A real Next.js build takes 60–90s.
 The failing deploys finished in 7–18s, which is the tell that nothing was built.
 
+### Applier dry runs, 2026-09-15
+- Fields reported filled were empty (city, how-did-you-hear, agreements). React Select
+  needs its options loaded before Enter; each pick is now read back from the page.
+- The resume never attached. The upload is asynchronous (~3s); the applier now waits
+  for the file name to appear.
+- "Employment agreements with your current employer" was answered "Aptean".
+  Commitment questions now go to a human before the employer rule can match.
+- Every job failed once on the phone widget's hidden country search box. It is now
+  excluded from field discovery, and reading options can never fail a job.
+- A graduation year was typed as "202112"; year fields now get the 4-digit year.
+- A written answer lost its opening quote; only quotes that wrap the whole answer are
+  removed now.
+
+### An Apps Script redeploy kept serving the old version
+"Deployment successfully updated" was still **Version 4 from Sep 11**. Editing a
+deployment keeps its version unless **Version → New version** is chosen.
+
 ### Earlier fixes still standing
 - Blocked-word gate ignores parentheticals and matches whole words, so
   *"Software Engineer (Secrets Manager & AI Identity)"* passes.
@@ -177,24 +245,21 @@ The failing deploys finished in 7–18s, which is the tell that nothing was buil
 
 ## 6. Open problems
 
-### The experience gate has never fired
-Every rejection so far is title or location. **Not one is on years of experience.**
-`enrichPending()` reports `0 enriched`, and every Salary reads `NA`.
+### ~~The experience gate has never fired~~ — resolved
+Workday (`/wday/cxs/`) and Amazon (`.json`) JD adapters were added to
+`fetchJdByUrl()`, and the gate now rejects 23 rows. Direct career sites ("other",
+69 passing rows) still get no JD text, so the gate can't check them and they get
+the default resume.
 
-Cause: enrichment only knows Greenhouse, Lever and SmartRecruiters. Workday,
-Amazon and direct career sites — the majority of rows — get no JD text, so the
-0–3 year rule has nothing to read and passes them silently.
+### Only Greenhouse can be applied to
+Of the passing rows, 69 are "other" (direct career sites), plus smartrecruiters 20,
+workday 18 and ashby 17. The applier has a verified Greenhouse adapter and an unrun
+Lever one. Ashby is the next cheapest, with a form shape close to Greenhouse's.
 
-Walmart's "2–5 years" role was caught by `iii` in its title, not by the experience
-rule. In v2 this gate produced 65% of all rejections.
-
-**Needed: a Workday JD adapter.** Highest-value remaining pipeline work.
-
-### Applier — code written, not yet run
-Phase 4 code exists in `v3/applier/` — Greenhouse and Lever adapters, dry-run
-mode, persistent browser profile, personal.md parser, resume selector, Sheet
-write-back. **Not yet run against a live form.** Needs `npm install` +
-`npx playwright install chromium` + `.env` with the Sheet API credentials.
+### Some "Remote" roles are rejected on geography
+`location [Remote] outside target geography` appears 4 times, although the seeded
+`country` policy includes `remote`. Check the live **Policies** tab value; the gate
+reads it at run time.
 
 ### Job Match scores may still be flat
 Historically all scores landed 84–96, unusable for ranking. The rewritten Spark
@@ -208,8 +273,15 @@ mostly do not. Low priority but worth knowing the column is currently decorative
 
 ## 7. Next
 
-**Short**
-1. **Workday JD adapter** — so the experience gate starts firing. ~60% of rows.
+**Now (applier)**
+1. First live submission: GitLab (`npm run apply -- --job-id greenhouse:8736877002 --submit`),
+   on Vinoth's go-ahead and from a personal machine (D12).
+2. Then the other 4 verified jobs, then dry runs of the remaining Greenhouse jobs.
+3. Ashby adapter (17 passing jobs), then SmartRecruiters (20).
+4. Decide what to do about the 69 "other" rows, mostly direct career sites.
+
+**Short (pipeline)**
+1. ~~Workday JD adapter~~ — done; the experience gate now fires.
 2. Second Spark schedule aimed at Lever/Greenhouse/Ashby startups, so the two
    schedules do not return the same companies.
 3. Fix dead slugs: `doordash`, `sentry`, `Visa`, `Bosch` (the last two return 0
@@ -217,22 +289,20 @@ mostly do not. Low priority but worth knowing the column is currently decorative
 4. Extend `CANDIDATE_TENANTS` and re-run `findTenants`. Hit rate was ~21%, so a
    longer candidate list is the cheapest way to grow coverage.
 
-**Then — Phase 4, the applier**
-5. Playwright CLI with a persistent browser profile.
+**Phase 4 plan as first written** (5, 8 and 9 are done)
+5. ~~Playwright with a persistent browser profile.~~
 6. Per-ATS form adapters. Greenhouse, Lever and Ashby share a similar shape and
    together cover Unacademy, Tekion, Mindtickle, Meesho, HighRadius. Workday is
    its own project and needs an account per tenant.
 7. Google SSO for boards that demand a login.
-8. Write `Applied` + `Applied At` back through `doPost`.
-9. **Dry-run mode first** — fill every field, screenshot the completed form, stop
+8. ~~Write `Applied` + `Applied At` back through `doPost`.~~
+9. ~~**Dry-run mode first**~~ — fill every field, screenshot the completed form, stop
    short of submit. The first real applications get eyeballed before anything goes
    out under Vinoth's name.
 10. The scraper also unlocks the employers with no public API (section 4).
 
-**Constraint worth planning around:** the applier runs locally. The workspace that
-gives Claude a shell on this machine is currently down from a Windows update, so
-Claude can write the code but cannot run or debug it live the way it has with
-Apps Script.
+**Constraint worth planning around:** the applier runs locally. Live submissions and
+Vinoth's logins belong on a personal machine, not the Aptean laptop (D12).
 
 ---
 
@@ -244,6 +314,12 @@ Apps Script.
 - [ ] Fix or delete the 7 dead Lever boards in v2's `data/boards.md`.
 - [ ] Name the Apps Script project — still "Untitled project".
 - [ ] Delete the abandoned Netlify site `jolly-naiad-8145a4` to avoid confusion.
+- [ ] Delete `v3/dashboard/netlify.toml`: Netlify reads the one at the repo root.
+- [ ] `main` has only the initial commit; all work is on `master`, which Netlify
+      deploys. Make `master` the default branch, or merge into `main` and switch Netlify.
+- [ ] Fix the First Citizens Bank row: its Status is a zero-width space.
+- [ ] Optional: the .NET keyword tweaks in the Resumes tab (base `.net` 2→3,
+      blueyonder `cloud-native` 2→1, base above paypal), then `rematchResumes`.
 
 ---
 
@@ -252,7 +328,12 @@ Apps Script.
 - **Spark cannot be triggered.** Only Gemini starts it. The dashboard's
   "Run pipeline" button processes rows already in the Sheet.
 - **Redeploy after every Apps Script code edit.** The `/exec` URL serves the last
-  deployed *version*, not the editor contents. This has bitten twice.
+  deployed *version*, not the editor contents. This has bitten three times. Save, then
+  Manage deployments → ✏️ → **Version: New version** → Deploy.
+- **Triggers run the editor code; the web app runs the deployed version.** Right after
+  a paste, the hourly tick already uses the new code and the dashboard does not.
+- **The dashboard deploys on push to `master`.** Sheet data and Resumes-tab edits need
+  no deploy of any kind.
 - **Policy changes need no redeploy.** They are Sheet data, read at run time.
 - **A board that is live is not a board that is useful.** Stripe has 627 postings,
   39 in India, 2 that match — the India office is finance and operations. Judge a
@@ -263,5 +344,6 @@ Apps Script.
 - **Missing data is not passing data.** Two gates treated an empty field as
   permission to skip the check. Both let wrong rows through.
 - **The Sheet is the contract.** Column names in `JOB_HEADERS` are read by name,
-  so renaming a column breaks the pipeline silently.
+  so renaming a column breaks the pipeline silently. New columns are appended on the
+  right by `ensureJobColumns()`.
 - **Nothing deletes rows.** Duplicates are marked `Skipped`.

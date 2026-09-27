@@ -42,6 +42,17 @@ test('questions naming the US get the US facts, whatever the role location', () 
   assert.equal(m('Are you legally authorized to work in the United States?'), 'authorized_to_work_us');
 });
 
+// Verbatim from Crunchyroll, 2026-09-17. It followed a sponsorship question answered "No",
+// and was filled with the word "yes" from the US sponsorship fact.
+test('a box for a US visa type is left empty, not answered yes/no', () => {
+  assert.equal(
+    m('If you answered yes to the above question, and you are currently located in the U.S., please indicate your current U.S. immigration status/visa and type of sponsorship required (if known):', 'text'),
+    '__empty_optional',
+  );
+  // The yes/no question itself still gets the fact.
+  assert.equal(m('Will you require sponsorship from us in the U.S.?', 'text'), 'requires_sponsorship_us');
+});
+
 test('lowercase "us" is the pronoun, not the country', () => {
   assert.notEqual(m('Are you authorized to work for us?', 'text', india), 'authorized_to_work_us');
 });

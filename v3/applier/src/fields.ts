@@ -81,6 +81,17 @@ const RULES: Rule[] = [
   // "why you require sponsorship to work in the US"). A question that names the US is
   // answered with the US facts; one that names no country is answered with the India
   // facts only for an India-located role — anywhere else a human decides.
+  // "If you answered yes above, indicate your U.S. immigration status/visa" — a box for a
+  // visa type, asked only of people already in the US, and conditional on a "yes" Vinoth
+  // did not give. The yes/no sponsorship fact landed in it as the word "yes" (Crunchyroll,
+  // 2026-09-17). It stays empty; if the form insists, a human answers it.
+  {
+    factKey: '__empty_optional',
+    test: (l, o) =>
+      // `.` and not `[^.]` on purpose: the gap usually contains "U.S." itself.
+      /(?:indicate|describe|specify|state|provide|list).{0,40}(?:immigration status|visa status|visa type|status\s*\/\s*visa|type of visa)/.test(l) &&
+      mentionsUS(o),
+  },
   {
     factKey: 'authorized_to_work_us',
     test: (l, o) => /authori[sz]ed|eligible|legally|right to work|work authori[sz]ation/.test(l) && mentionsUS(o),

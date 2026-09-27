@@ -54,7 +54,66 @@ function row(jobId: string, v: FilledValue): string {
     `<td class="value">${value}</td><td>${source}</td></tr>`;
 }
 
+/**
+ * What can be counted: how much of the form is filled, and where each value came from.
+ * Whether an answer is *right* is a human judgement — hence the "review" column, which
+ * counts the answers a model wrote rather than read from personal.md.
+ */
+interface Tally {
+  fields: number;
+  required: number;
+  requiredFilled: number;
+  fromFacts: number;
+  fromDiscord: number;
+  written: number;
+  blankOptional: number;
+}
+
+function tally(r: FillRecord): Tally {
+  const t: Tally = { fields: r.values.length, required: 0, requiredFilled: 0, fromFacts: 0, fromDiscord: 0, written: 0, blankOptional: 0 };
+  for (const v of r.values) {
+    const filled = v.value.trim() !== '';
+    if (v.required) { t.required++; if (filled) t.requiredFilled++; }
+    if (!filled) { if (!v.required) t.blankOptional++; continue; }
+    if (answers.generatedAnswer(r.jobId, v.label) === v.value) t.written++;
+    else if (answers.lookup(r.jobId, v.label) === v.value) t.fromDiscord++;
+    else t.fromFacts++;
+  }
+  return t;
+}
+
 const jobs = [...latest.values()].sort((a, b) => a.company.localeCompare(b.company));
+
+const summary = (() => {
+  const rows = jobs.map((r) => {
+    const t = tally(r);
+    const missing = t.required - t.requiredFilled;
+    const ready = r.status.startsWith('Dry run') && missing === 0;
+    return `<tr class="${ready ? '' : 'warn-row'}">
+      <td>${esc(r.company)}</td>
+      <td>${t.requiredFilled}/${t.required}${missing ? ` <strong>(${missing} empty)</strong>` : ''}</td>
+      <td>${t.fromFacts}</td><td>${t.fromDiscord}</td>
+      <td>${t.written ? `<strong>${t.written}</strong>` : '0'}</td>
+      <td>${t.blankOptional}</td>
+      <td>${ready ? '<span class="badge ok">Ready</span>' : `<span class="badge warn">${esc(r.status.split('—')[0].trim())}</span>`}</td>
+    </tr>`;
+  });
+  const all = jobs.map(tally);
+  const sum = (k: keyof Tally) => all.reduce((a, t) => a + t[k], 0);
+  const ready = jobs.filter((r) => r.status.startsWith('Dry run') && tally(r).required === tally(r).requiredFilled).length;
+  const pct = sum('required') ? Math.round((sum('requiredFilled') / sum('required')) * 100) : 0;
+  return `<section class="card">
+  <h2>Accuracy check</h2>
+  <p class="meta">${ready} of ${jobs.length} jobs ready to submit · ${pct}% of required fields filled
+    (${sum('requiredFilled')}/${sum('required')}) · <strong>${sum('written')} written answers to read</strong></p>
+  <p class="lead">"Written" answers were composed by Claude from <code>personal.md</code> and the resume
+    highlights; they are the only values a person still needs to judge. Everything counted under
+    "From facts" or "Discord" is a value taken verbatim from Vinoth's own data or his Discord reply.</p>
+  <div class="scroll"><table><thead><tr>
+    <th>Company</th><th>Required filled</th><th>From facts</th><th>Discord</th><th>Written</th><th>Optional left blank</th><th></th>
+  </tr></thead><tbody>${rows.join('')}</tbody></table></div>
+</section>`;
+})();
 const cards = jobs.map((r) => {
   const missing = r.values.filter((v) => v.required && !v.value.trim()).length;
   const ready = r.status.startsWith('Dry run') && missing === 0;
@@ -101,6 +160,7 @@ const html = `<title>Applier Fill Check</title>
 <main>
   <h1>Applier fill check</h1>
   <p class="lead">What each form held when filling finished, read back from the page. Nothing here has been submitted.</p>
+  ${summary}
   ${cards}
 </main>`;
 
@@ -108,6 +168,11 @@ const out = resolve(dir, 'fill-report.html');
 writeFileSync(out, html);
 console.log(`Report: ${out}`);
 for (const r of jobs) {
-  const missing = r.values.filter((v) => v.required && !v.value.trim()).length;
-  console.log(`  ${r.company.padEnd(12)} ${r.status}${missing ? ` — ${missing} required empty` : ''}`);
+  const t = tally(r);
+  const missing = t.required - t.requiredFilled;
+  console.log(
+    `  ${r.company.padEnd(14)} required ${t.requiredFilled}/${t.required}` +
+      ` · facts ${t.fromFacts} · discord ${t.fromDiscord} · written ${t.written}` +
+      ` — ${r.status}${missing ? ` (${missing} required empty)` : ''}`,
+  );
 }

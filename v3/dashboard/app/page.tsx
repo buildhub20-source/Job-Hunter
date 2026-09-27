@@ -19,6 +19,7 @@ const STATUS: Record<string, string> = {
   Blocked: 'var(--serious)',
   Failed: 'var(--critical)',
   Skipped: 'var(--ink-3)',
+  Closed: 'var(--ink-3)',
   'Not Applied': 'var(--ink-3)',
 };
 
@@ -101,6 +102,7 @@ export default function Page() {
         <div className="tile"><div className="k">Applied</div><div className="v" style={{ color: 'var(--good)' }}>{t.applied ?? '—'}</div></div>
         <div className="tile"><div className="k">Blocked</div><div className="v" style={{ color: (t.blocked ?? 0) > 0 ? 'var(--serious)' : undefined }}>{t.blocked ?? '—'}</div></div>
         <div className="tile"><div className="k">Failed</div><div className="v" style={{ color: (t.failed ?? 0) > 0 ? 'var(--critical)' : undefined }}>{t.failed ?? '—'}</div></div>
+        <div className="tile"><div className="k">Closed</div><div className="v" style={{ color: 'var(--ink-3)' }}>{t.closed ?? '—'}</div></div>
       </div>
 
       <div className="card">
@@ -141,7 +143,7 @@ export default function Page() {
         <h2>Jobs — showing {shown.length} of {jobs.length}</h2>
         <div className="row" style={{ marginBottom: 14 }}>
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            {['All', 'Not Applied', 'Applied', 'Blocked', 'Failed', 'Skipped'].map((s) => <option key={s}>{s}</option>)}
+            {['All', 'Not Applied', 'Applied', 'Blocked', 'Failed', 'Skipped', 'Closed'].map((s) => <option key={s}>{s}</option>)}
           </select>
           <select value={gate} onChange={(e) => setGate(e.target.value)}>
             {['All', 'Passed', 'Rejected'].map((s) => <option key={s}>{s}</option>)}

@@ -1,12 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPrompt, buildChoicePrompt, unwrapQuotes } from '../src/writer.js';
+import { buildPrompt, buildChoicePrompt, unwrapQuotes, stripMarkup } from '../src/writer.js';
 
 test('quotes are removed only when they wrap the whole answer', () => {
   assert.equal(unwrapQuotes('"I like building things."'), 'I like building things.');
   // Verbatim shape from the Celonis dry run, 2026-09-15.
   const opensWithQuote = '"The Best Team Wins" means to me that the strongest outcome comes from shared work.';
   assert.equal(unwrapQuotes(opensWithQuote), opensWithQuote);
+});
+
+test('markup the model wrapped around its answer never reaches the form', () => {
+  // Verbatim tail of the Redwood answer stored on 2026-09-17.
+  assert.equal(
+    stripMarkup('I would like to go deeper into it here.</answer>\n</invoke>'),
+    'I would like to go deeper into it here.',
+  );
+  assert.equal(stripMarkup('<answer>Plain text.</answer>'), 'Plain text.');
+  // Angle brackets that are part of the answer stay.
+  assert.equal(stripMarkup('Latency dropped to <200ms in that service.'), 'Latency dropped to <200ms in that service.');
 });
 
 const input = {

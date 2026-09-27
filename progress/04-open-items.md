@@ -46,7 +46,11 @@ Code-complete and its auth mechanism now works under this org's policies — see
    ngrok or Cloudflare Tunnel to expose the API. `GCHAT_PROJECT_NUMBER` is the real-JWT
    path for whenever this has a stable public address instead.
 
-### A "v3" redesign exists as a proposal, not a decision
+### ~~A "v3" redesign exists as a proposal, not a decision~~ — v3 is where the work is
+As of 2026-09-17 v3 runs live (Spark + Apps Script + Netlify dashboard) and the applier
+has passed live dry runs; see [docs/V3-STATUS.md](../docs/V3-STATUS.md). v2 is kept,
+not extended. The original note follows.
+
 [docs/V3-SparkFlow.md](../docs/V3-SparkFlow.md) — replace Postgres/ATS-adapters with a
 Google Sheet + Gemini Spark + Apps Script + Vercel dashboard + Claude/playwright-cli
 applier. See [01-completed.md](01-completed.md) for what exists of it (a draft Apps
@@ -80,6 +84,8 @@ submitting live applications on Aptean hardware is not — see D12.
 | **Travel percentage** | Currently 25%, marked `source=default` — Claude's choice, not his answer. The applier asks instead of submitting it (D18) until he gives a real number. |
 | **Walk-away CTC** | `minimum_ctc` is 600000, equal to the ask. If he'd take 5.75L for the right role, the gate is currently deleting those jobs. |
 | **Chat space membership** | He answers his own approval cards, so he needs to be in the space. |
+| **Go-ahead for the first live submission** (GitLab) | Five jobs are dry-run verified; nothing has been submitted under his name yet. |
+| **Make the resume PDFs agree with each other** | Each job now gets its own version, and they disagree: CGPA 8.0 (amazon, barclays, gbt, p44) vs 7.75 (the rest and `personal.md`); "1.9+" vs "2+" years vs 2.2 in `personal.md`; 10+/15+/20+ carrier APIs; 10K+ vs 50K+ daily requests. A form can contradict the resume attached to it. |
 
 ## Needed from the operator
 
@@ -91,9 +97,12 @@ submitting live applications on Aptean hardware is not — see D12.
 | ~~LLM API key~~ | Not currently needed — step 8 runs on Pro/Max, see D14 |
 | Google Cloud project + OAuth client + service account (checklist above) | Step 9 and real Google Chat (stub works meanwhile) |
 | A public HTTPS URL (ngrok/Cloudflare Tunnel or real hosting) | Google Chat button replies specifically |
-| `DISCORD_ALLOWED_USER_IDS` in `v3/applier/.env` | Two-way Discord prompts. Answers are now accepted only from these user IDs; empty means the applier refuses answers and parks the job instead. |
+| ~~`DISCORD_ALLOWED_USER_IDS` in `v3/applier/.env`~~ | Done 2026-09-15; Discord Q&A used live. |
 | Fix one Sheet row: First Citizens Bank, `Status` is a zero-width space | That row is invisible to the applier (not "Not Applied") and to the dashboard counts. Nothing validates Status values on write. |
-| Which `netlify.toml` Netlify actually reads | There are two: repo root (sets `base = "v3/dashboard"`) and `v3/dashboard/`. Delete the one that isn't used, so a future edit doesn't land in the dead one. |
+| Delete `v3/dashboard/netlify.toml` | Netlify reads the repo-root one (`base = "v3/dashboard"`) and deploys `master`. The second file is dead and a future edit could land in it. |
+| Default branch | `origin/main` has only the initial commit; everything is on `master`. Make `master` the default, or merge and move Netlify to `main`. |
+| Check the live `country` policy includes `remote` | 4 "Remote" rows are rejected as outside the target geography. |
+| Optional: .NET keyword tweaks in the Resumes tab | Thomson Reuters (C#/.NET) got `blueyonder`, Nscript (C#) got `paypal`; `base` fits both. Edits listed in [docs/V3-STATUS.md](../docs/V3-STATUS.md) §8, then run `rematchResumes`. |
 
 ---
 

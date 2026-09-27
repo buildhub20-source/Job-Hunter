@@ -17,7 +17,7 @@ const POLICIES_SHEET = 'Policies';
 const JOB_HEADERS = [
   'Job ID', 'Company Name', 'Role', 'Location', 'Salary', 'Apply Link', 'ATS',
   'Job Match', 'Gate Result', 'Status', 'Applied At', 'Notes', 'JD Text', 'Discovered At',
-  'Resume', 'Resume Match',
+  'Resume', 'Resume Match', 'Last Checked',
 ];
 
 const SEED_POLICIES = [
@@ -67,7 +67,9 @@ function installTriggers() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('hourlyTick').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('onSheetChange').forSpreadsheet(ss).onChange().create();
-  Logger.log('Triggers installed: hourly + onChange.');
+  // Liveness runs at night: it fetches once per row and nothing else needs the quota then.
+  ScriptApp.newTrigger('dailyLivenessTick').timeBased().atHour(3).everyDays(1).create();
+  Logger.log('Triggers installed: hourly + onChange + daily liveness.');
 }
 
 /**
@@ -604,7 +606,12 @@ function doGet(e) {
       blocked: count('Status', 'Blocked'),
       failed: count('Status', 'Failed'),
       skipped: count('Status', 'Skipped'),
+      closed: count('Status', 'Closed'),
     },
+    lastLiveness: (function () {
+      try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('LAST_LIVENESS')); }
+      catch (err) { return null; }
+    })(),
     gateBreakdown: Object.keys(gates).map(k => ({ reason: k, count: gates[k] }))
       .sort((a, b) => b.count - a.count),
     jobs: jobs,

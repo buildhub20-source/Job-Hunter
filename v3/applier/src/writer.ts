@@ -125,9 +125,21 @@ export async function writeAnswer(input: WriteInput): Promise<string> {
     },
     maxBudgetUsd: 0.3,
   })) as { answer?: string };
-  const answer = unwrapQuotes((out.answer ?? '').trim());
+  const answer = unwrapQuotes(stripMarkup(out.answer ?? ''));
   if (!answer) throw new Error('the model returned an empty answer');
   return answer;
+}
+
+/**
+ * Remove markup the model wrapped around its own answer. One Redwood answer was stored —
+ * and typed into the form — ending in "</answer>", because the model closed a tag it had
+ * been thinking in. A recruiter would have read that.
+ */
+export function stripMarkup(text: string): string {
+  return text
+    .replace(/<\/?(?:answer|response|output|result|invoke|function_calls|parameter)[^>]*>/gi, '')
+    .replace(/\s+$/, '')
+    .trim();
 }
 
 /**

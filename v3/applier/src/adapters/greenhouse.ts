@@ -155,6 +155,41 @@ async function tryFillField(
   return { filled: true };
 }
 
+const CLOSED_TEXT = /job you are looking for is no longer open|no longer (?:open|accepting|available)|position has been (?:closed|filled)|this posting (?:is closed|has expired)/i;
+
+/**
+ * Whether the page we landed on is a closed posting rather than an application form.
+ * Either the page says so, or the job link bounced somewhere else entirely — a board
+ * listing or the company's own careers site.
+ */
+export function postingClosed(pageText: string, currentUrl: string, applyLink: string): boolean {
+  if (CLOSED_TEXT.test(pageText)) return true;
+  const idInLink = /\/jobs\/(\d+)/.exec(applyLink)?.[1];
+  return !!idInLink && !currentUrl.includes(idInLink);
+}
+
+/** Options that state a fact about Vinoth — citizenship, work authorisation, visa status. */
+export const STATUS_CLAIM = /authori[sz]ed to work|permanent(?:ly)? (?:in|resident)|work permit|citizen|visa|sponsorship|green card|right to work/i;
+
+const CODE_TEXT = /verification code (?:was |has been )?sent|enter the \d+[- ]character code|confirm you'?re a human|security code/i;
+
+/**
+ * Whether the page is asking for an emailed verification code rather than accepting the
+ * application. Returns the sentence the page shows, so the note names the address the
+ * code went to.
+ */
+export async function verificationCodeWanted(page: Page): Promise<string | null> {
+  return codeSentence((await page.textContent('body').catch(() => '')) ?? '');
+}
+
+/** The page's own words about the code, or null when it is not asking for one. */
+export function codeSentence(body: string): string | null {
+  const m = CODE_TEXT.exec(body);
+  if (!m) return null;
+  const around = body.slice(Math.max(0, m.index - 120), m.index + 160).replace(/\s+/g, ' ').trim();
+  return `Verification code required: "${around}".`;
+}
+
 /** Discover form fields on a Greenhouse application page. */
 async function discoverFields(page: Page): Promise<Field[]> {
   return page.evaluate(() => {
@@ -263,6 +298,14 @@ export const greenhouse: AtsAdapter = {
       let fields = await discoverFields(page);
       console.log(`  → Found ${fields.length} form fields`);
 
+      // A posting taken down still has a URL. Greenhouse then shows "no longer open" and
+      // the board listing, or the company's careers page. Without this the run reported a
+      // missing resume field and asked a human about a job nobody can apply to.
+      if (fields.length === 0 && postingClosed(posting, page.url(), job['Apply Link'])) {
+        console.log('  ⛔ Posting is closed — no application form');
+        return { status: 'Failed', notes: 'Posting closed — no application form', screenshots, submitted };
+      }
+
       const blockers: Omit<Question, 'n'>[] = [];
       const handled = new Set<string>();
       let filled = 0;
@@ -302,7 +345,17 @@ export const greenhouse: AtsAdapter = {
           }
 
           if (result.openChoice) {
-            const { options } = await optionsForQuestion(page, field);
+            const { options, optionsKind } = await optionsForQuestion(page, field);
+
+            // A vague label ("choose the answer that fits your situation") can still hide a
+            // question of fact: Redwood's options were work-authorisation statuses, and the
+            // model picked one on Vinoth's behalf. Options decide this, not the label (D18).
+            if (options?.length && options.some((o) => STATUS_CLAIM.test(o))) {
+              blockers.push({ label: field.label, reason: `Asks Vinoth's own status: "${field.label}"`, options, optionsKind });
+              console.log(`    ❓ ${field.label} (a question of fact — asking a human)`);
+              continue;
+            }
+
             let choice = opts.answers.generatedAnswer(job['Job ID'], field.label);
             if (!choice && options?.length) {
               console.log(`    ✍️  Choosing an option for "${field.label}"...`);
@@ -413,6 +466,20 @@ export const greenhouse: AtsAdapter = {
         return { status: 'Blocked', notes: 'DRY RUN — form filled successfully, not submitted', screenshots, submitted };
       }
 
+      // Asked before the click as well as after: a board that emails a code shows it up
+      // front, and clicking submit against a disabled button proves nothing either way.
+      const codeFirst = await verificationCodeWanted(page);
+      if (codeFirst) {
+        console.log(`  🔐 ${codeFirst}`);
+        return {
+          status: 'Blocked',
+          notes: `NOT SUBMITTED — ${codeFirst} Finish this one by hand: the form is filled, ` +
+            'enter the code from the email and press Submit.',
+          screenshots,
+          submitted: false,
+        };
+      }
+
       console.log('  🚀 Submitting application...');
       const submitBtn = await page.$('button[type="submit"], input[type="submit"], button:has-text("Submit")');
       if (!submitBtn) {
@@ -428,6 +495,22 @@ export const greenhouse: AtsAdapter = {
       if (await submittedAndConfirmed(page, formUrl, '#application_form, form[action*="application"]')) {
         console.log('  ✅ Confirmation page detected');
         return { status: 'Applied', notes: 'Submitted via Greenhouse, confirmation page seen', screenshots, submitted };
+      }
+
+      // Some boards email a code and keep the submit button disabled until it is typed in
+      // (Amtech, 2026-09-17). Nothing was sent: the click only asked for the code. It is a
+      // human verification gate, so the job waits for a person — and `submitted` goes back
+      // to false, or the ledger would block the retry that person needs to make.
+      const codeAsked = await verificationCodeWanted(page);
+      if (codeAsked) {
+        console.log(`  🔐 ${codeAsked}`);
+        return {
+          status: 'Blocked',
+          notes: `NOT SUBMITTED — ${codeAsked} Finish this one by hand: the form is filled, ` +
+            'enter the code from the email and press Submit.',
+          screenshots,
+          submitted: false,
+        };
       }
 
       // Design §8: never trust the page about whether you submitted. The click happened,

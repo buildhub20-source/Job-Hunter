@@ -1,6 +1,34 @@
 # What's Next
 
-Steps 8–17. Order matters: each assumes the one before it works.
+Active work is on **v3** (Sheet + Apps Script + Netlify dashboard + local applier).
+The v2 step list below is kept for reference; several of its steps (11, 12, 13, 15)
+now exist in v3 form instead.
+
+## v3 — in order (updated 2026-09-17)
+
+1. **First live submission: GitLab.** It passed the dry run and the fill report.
+   `npm run apply -- --job-id greenhouse:8736877002 --submit`. Needs Vinoth's
+   go-ahead and a personal machine (D12). Check the confirmation email afterwards;
+   an unconfirmed submit is written `Blocked`, never `Applied` (D19).
+2. **Submit the other four verified jobs** (Speechify, Celonis, Truveta, BitGo),
+   one at a time, checking each outcome in the Sheet.
+3. **Dry-run the remaining Greenhouse jobs** (32 passing, not applied), answer their
+   Discord questions, read `npm run report`, then submit.
+4. **Ashby adapter** (17 passing jobs). Then SmartRecruiters (20), then Workday (18),
+   which needs an account per tenant.
+5. **The 69 "other" rows** (direct career sites): no JD text, no adapter. Decide
+   whether a generic form filler is worth it, or leave them for manual applications.
+6. **Pipeline:** a second Spark schedule for startups, dead-slug cleanup, longer
+   `findTenants` candidate list (see `docs/V3-STATUS.md` §7).
+
+Waiting on Vinoth (see [04-open-items.md](04-open-items.md)): approve the rewritten
+essay, and make the numbers consistent across the resume PDFs.
+
+---
+
+## v2 — steps 8–17 (reference)
+
+Order matters: each assumes the one before it works.
 
 ---
 

@@ -1,53 +1,59 @@
-# JobOps Agent v2 — Progress
+# JobOps Agent — Progress
 
 Living record of what is built, what is next, and why things are the way they are.
 Update it at the end of every working session.
 
 | | |
 | --- | --- |
-| **Last updated** | 2026-09-13 |
-| **Commits** | 8 (more uncommitted — see below) |
-| **Source files** | 116+ |
-| **Packages** | shared · db · profile · chat · approvals · adapters · discovery · evaluator · llm · inbox |
-| **Build steps done** | 1–10 of 17 |
-| **Tests** | 84 written · **84 executed and passing** |
-| **Typecheck** | clean across all 12 workspaces |
-| **Ever run end to end** | **Yes** — Postgres, discovery (13 boards), evaluator, all run against live data. Gmail credentials exist but the scan hasn't been run live yet this session. |
+| **Last updated** | 2026-09-17 |
+| **Commits** | 31 on `master`, latest `3ca761c` |
+| **Active line of work** | **v3** — Google Sheet + Apps Script + Netlify dashboard + local Playwright applier ([status](../docs/V3-STATUS.md)) |
+| **v3 pipeline** | Live. 225 jobs, 177 pass the gates, 0 applied (2026-09-17) |
+| **v3 applier** | Greenhouse dry run verified on 5 live forms. **Nothing submitted yet.** |
+| **Tests** | v3 applier: 68 passing · v2: 84 passing |
+| **v2** | Steps 1–10 of 17 built and run against live data; kept, not extended |
 
 ## The one thing that matters right now
 
-Two things happened since the last commit that aren't reflected in git yet:
-
-1. **A real correctness bug, found and fixed**: the geography hard gate ignored the
-   jobcard's already-correct `country` field and re-derived it from raw location text,
-   so cities like "Bengaluru" (no literal "India" in the string) were wrongly rejected.
-   Three already-evaluated jobs had this wrong verdict; corrected in the database and
-   re-evaluated. See [01-completed.md](01-completed.md).
-2. **A "v3" redesign proposal** exists at [docs/V3-SparkFlow.md](../docs/V3-SparkFlow.md)
-   — replace Postgres/ATS-adapters with Sheets + Gemini Spark + Apps Script. Explicitly
-   marked design-not-built. **This is an open fork, not a decided direction** — see
-   [04-open-items.md](04-open-items.md).
-
-Also since the last commit: Gmail OAuth is fully wired (credentials in `secrets/`),
-`data/boards.md` grew to 13 enabled boards, Google Chat's auth was rewritten around
-Application Default Credentials because this org blocks service-account key downloads
-(D16), and a Funnel analytics page was added to the dashboard.
-
-None of this is committed. Working tree has real, tested changes sitting uncommitted —
-commit them before doing anything else, so a crash doesn't lose them again.
-
-To bring the stack up again after a reboot:
+**The first live application.** Five Greenhouse jobs (Speechify, Celonis, GitLab,
+Truveta, BitGo) are filled end to end in dry run and checked field by field in the fill
+report. GitLab goes first, on Vinoth's go-ahead, from a personal machine (D12):
 
 ```
-npm run db:up
-npm run dev
+cd v3/applier
+npm run apply -- --job-id greenhouse:8736877002 --submit
 ```
-(Migrations only need re-running if `db/migrations/` gets a new file — `docker compose`
-keeps the data volume across restarts.)
+
+Since the last update (2026-09-13), all committed in `3ca761c`:
+- The applier fills real Greenhouse forms correctly, asks Vinoth in Discord when it
+  can't answer truthfully (one message per job, options included), writes open-ended
+  answers from his resume facts only (D20), and produces a fill report to check.
+- Each job gets the resume version its JD fits (D21). The Sheet and the dashboard show
+  which one, and the applier uploads it as `Vinoth_M_Resume.pdf`.
+- The experience gate fires now that Workday and Amazon postings are enriched.
+
+Waiting on Vinoth: the go-ahead above, approval of the rewritten essay, and consistent
+numbers across the resume PDFs ([04-open-items.md](04-open-items.md)).
+
+Day-to-day commands:
+
+```
+cd v3/applier
+npm run apply -- --limit 5          # dry run: fill, screenshot, don't submit
+npm run answers -- --watch          # pick up Discord replies
+npm run report                      # screenshots/fill-report.html
+npm test
+```
+
+After an Apps Script code change: save, then Deploy → Manage deployments → ✏️ →
+**Version: New version** → Deploy. The dashboard redeploys on push to `master`.
+
+To bring the v2 stack up after a reboot: `npm run db:up && npm run dev`.
 
 ## Index
 
 - [01-completed.md](01-completed.md) — what exists, per step, and what was actually verified
+- [docs/V3-STATUS.md](../docs/V3-STATUS.md) — the v3 system: phases, numbers, bugs, next
 - [02-next.md](02-next.md) — remaining steps in order, with what each needs
 - [03-decisions.md](03-decisions.md) — decisions taken and why, so they aren't relitigated
 - [04-open-items.md](04-open-items.md) — blockers, unknowns, and what's needed from whom
@@ -60,4 +66,4 @@ keeps the data volume across restarts.)
 4. No verified submission without evidence.
 5. Human verification gates stay human — notify, never attempt.
 6. Personal information lives in `data/personal.md` and nowhere else.
-7. Questions go to Google Chat; state goes to the dashboard.
+7. Questions go to a human (Google Chat in v2, Discord in v3); state goes to the dashboard.

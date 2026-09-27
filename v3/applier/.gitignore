@@ -5,3 +5,7 @@ screenshots/
 .env
 submitted.jsonl
 answers.json
+
+# Local working copies: the originals are ignored, so their backups must be too.
+*.bak
+submit-ids.txt

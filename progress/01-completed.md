@@ -1,7 +1,9 @@
 # Completed
 
-Build steps 1–7 of 17. Each entry says what was **verified** versus what is
-**written but unproven** — that distinction is the point of this file.
+v2 build steps 1–10 of 17, and the v3 work since (Sheet pipeline, dashboard, applier —
+see also [docs/V3-STATUS.md](../docs/V3-STATUS.md)). Each entry says what was
+**verified** versus what is **written but unproven** — that distinction is the point of
+this file.
 
 ---
 
@@ -290,7 +292,69 @@ resume facts and set unapproved (D18).
 - ✅ Applier: 23 tests (field routing, fact loading, resume policy), typecheck clean.
 - ✅ Greenhouse adapter dry-run and submit path exercised against a local fixture form
   — no job portal touched, per D12.
-- ❌ Not run against a real ATS form after these changes.
+- ❌ Not run against a real ATS form after these changes. *(Done the same day; see below.)*
+
+---
+
+## v3 applier on live forms, Discord Q&A, written answers, resume matching, 2026-09-15 · commit `3ca761c`
+
+**Live dry run.** Five real Greenhouse jobs (Speechify, Celonis, GitLab, Truveta, BitGo),
+headless, nothing submitted. The first run reported fields filled that were empty on the
+page; every fix below came from reading the real forms, not the code. The last run
+ended with all five "Dry run — ready to submit".
+- React Select comboboxes need their options loaded before Enter, and each pick is now
+  read back (`chooseComboboxOption`, `comboboxValue` in `adapters/common.ts`).
+- Resume upload is asynchronous; the applier waits up to 20s for the file name.
+- Required-field check before "ready": `emptyRequiredFields` reads the page.
+- New matcher rules: preferred name ("the name you'd prefer us to use"), gender
+  (`gender = Male` added to `personal.md`, "Man" accepted as a synonym), other voluntary
+  demographic questions left blank, "Most Recent Job Title", consent dropdowns,
+  commitments asked before the employer rule.
+- Whole-word option matching: "male" had matched "Female".
+- Capped searchable lists (schools, 100 options) offer suggestions or "Other" instead
+  of rejecting a real answer. Year fields get a 4-digit year.
+- A hidden phone-widget input made all five jobs fail once; option reading is now best
+  effort and that input is skipped.
+
+**Questions to Vinoth over Discord** (`discord.ts`, `questions.ts`, `answers.ts`).
+One message per blocked job, with its dropdown options. He replies to that message;
+only `DISCORD_ALLOWED_USER_IDS` is accepted. Replies are matched to the job through
+`message_reference`, validated against the options (a rejected reply lists the
+closest ones), and kept in `answers.json`. `always` stores a reusable answer. Replies
+sent after a run ended are collected at the start of the next run, or by
+`npm run answers [-- --watch]`, which also requeues the job in the Sheet.
+- ✅ Used live: Vinoth answered from Discord; "1 Other" and a rejected discipline
+  ("Information technology", not an option) were handled and confirmed in the thread.
+
+**Written answers for open-ended questions** (`writer.ts`, D20). Claude through the
+Claude Code CLI writes answers such as "What does 'The Best Team Wins' mean to you?",
+and picks an option for such dropdowns, grounded only in `personal.md` and the new
+`resume_highlights` fact. Cached per job, so a live run submits what the dry run showed.
+- ✅ Celonis: dropdown "means to me…" chosen, follow-up box written from resume facts.
+
+**Fill report** (`report.ts`, `npm run report`). Every field, its value, the source of
+the value ("Discord answer", "Written — review"), and the form screenshot, as
+`screenshots/fill-report.html`.
+
+**Resume per job** (`v3/appsscript/Resumes.gs`, D21). Every job had been getting
+`amazon.pdf`. Keyword profiles were built by reading all 10 PDFs and live in a new
+**Resumes** tab. The hourly tick writes **Resume** and **Resume Match** columns;
+another version must beat the default by 3 points. The dashboard shows the column.
+The applier uploads that file (policy employer file first; an unknown value falls
+back to the default), always named `Vinoth_M_Resume.pdf`.
+- ✅ Tried on the 27 passing Greenhouse JDs before shipping. That exposed two false
+  switches (EEO "accessibility", a single "frontend"), fixed by a tighter keyword and
+  the margin.
+- ✅ Live: Sheet columns added in place, 136 passing rows matched, API and Netlify
+  dashboard show the column. Skipped duplicates get no resume.
+- ✅ `Code.gs` `doGet` now reads columns by header name.
+
+**Checks:** 68 applier tests pass (field routing, Discord reply parsing, answer store,
+writer prompts, resume policy and matching, where the matcher tests load the real
+`Resumes.gs`). Applier and dashboard typecheck clean.
+
+- ❌ Nothing submitted yet. The first live submission (GitLab) waits for Vinoth's go-ahead.
+- ❌ Lever adapter not run against a live form.
 
 ---
 
@@ -371,7 +435,7 @@ database), `/adapters/healthcheck`, `GET /api/boards`.
 | `data/personal.md` | 41 facts, **39 usable**, 2 open. Subject is Vinoth M. |
 | `data/policies/targeting.md` | 14 rows. Equal stack weights, salary floor active at 600000. |
 | `data/policies/exclusions.md` | 6 rows. Staffing and Aptean excluded. |
-| `data/policies/resumes.md` | Base + per-employer override, 9 companies mapped. |
+| `data/policies/resumes.md` | Employer override → JD keyword match (Sheet's Resumes tab) → default `amazon`. 9 companies mapped. |
 | `data/boards.md` | 10 boards, all unverified. |
 | `data/resumes/` | 10 PDFs, verified by hash after transfer. |
 

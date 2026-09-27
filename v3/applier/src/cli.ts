@@ -267,9 +267,15 @@ async function main() {
 
       if (result.submitted) recordSubmitted(job, result.status, result.notes);
 
-      // Dry-run writes nothing. A live run writes every outcome, Blocked included —
+      // A closed posting is a fact about the job, not the outcome of an application, and
+      // it is worth recording from a dry run too: left "Not Applied", every later run
+      // opens the dead page again. Its stale questions go with it.
+      const closed = result.status === 'Failed' && /posting closed/i.test(result.notes);
+      if (closed) answers.forgetJob(job['Job ID']);
+
+      // Dry-run writes nothing else. A live run writes every outcome, Blocked included —
       // a Blocked job left as "Not Applied" is re-attempted, and re-notified, forever.
-      if (args.submit) {
+      if (args.submit || closed) {
         const ok = await writeStatus(apiUrl, apiToken, job['Job ID'], result.status, result.notes);
         if (ok) {
           console.log('   ✅ Status written to Sheet');
