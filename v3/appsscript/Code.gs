@@ -105,6 +105,7 @@ function jobId(applyLink, company, role, location) {
     [/ashbyhq\.com\/([^/]+)\/([0-9a-f-]{16,})/i,           'ashby'],
     [/smartrecruiters\.com\/([^/]+)\/(\d+)/i,              'smartrecruiters'],
     [/([a-z0-9-]+)\.wd\d+\.myworkdayjobs\.com\/.*?([A-Z]{2,4}-?\d{4,})/i, 'workday'],
+    [/wellfound\.com\/(jobs)\/(\d+)/i,                     'wellfound'],
   ];
   for (const [re, ats] of pats) {
     const m = url.match(re);
@@ -160,6 +161,9 @@ function appendNewJobs(rows) {
       row[ix['Gate Result']]  = '';
       row[ix['Status']]       = 'Not Applied';
       row[ix['Discovered At']] = new Date().toISOString();
+      // Some sources hand over the description with the listing (Wellfound). Keeping it
+      // here means the experience gate judges the row on its first pass, with no fetch.
+      if (r.jd && ix['JD Text'] !== undefined) row[ix['JD Text']] = r.jd;
       fresh.push(row);
     }
     if (fresh.length) {
@@ -535,6 +539,8 @@ function hourlyTick() {
   // those rows in the same run. Spark's rows are already in the sheet.
   let sourced = { polled: 0, added: 0 };
   try { sourced = pollSources(6); } catch (e) { Logger.log('pollSources failed: ' + e); }
+  let wellfound = { added: 0 };
+  try { wellfound = wellfoundPoll(); } catch (e) { Logger.log('wellfoundPoll failed: ' + e); }
 
   const identified = normalizeRows();
   const enriched = enrichPending(40);
@@ -544,7 +550,8 @@ function hourlyTick() {
   PropertiesService.getScriptProperties().setProperty('LAST_TICK', JSON.stringify({
     at: new Date().toISOString(),
     boardsPolled: sourced.polled || 0,
-    sourcedNew: sourced.added || 0,
+    sourcedNew: (sourced.added || 0) + (wellfound.added || 0),
+    wellfoundNew: wellfound.added || 0,
     identified: identified, enriched: enriched, gated: gated, resumesMatched: resumesMatched,
   }));
   Logger.log('hourlyTick: boards=' + (sourced.polled || 0) + ' sourced=' + (sourced.added || 0) +

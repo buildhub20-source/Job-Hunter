@@ -102,7 +102,11 @@ export default function Page() {
         <div className="tile"><div className="k">Applied</div><div className="v" style={{ color: 'var(--good)' }}>{t.applied ?? '—'}</div></div>
         <div className="tile"><div className="k">Blocked</div><div className="v" style={{ color: (t.blocked ?? 0) > 0 ? 'var(--serious)' : undefined }}>{t.blocked ?? '—'}</div></div>
         <div className="tile"><div className="k">Failed</div><div className="v" style={{ color: (t.failed ?? 0) > 0 ? 'var(--critical)' : undefined }}>{t.failed ?? '—'}</div></div>
-        <div className="tile"><div className="k">Closed</div><div className="v" style={{ color: 'var(--ink-3)' }}>{t.closed ?? '—'}</div></div>
+        {/* Counted here rather than read from totals: an older Apps Script deployment
+            doesn't send `closed`, but every row still carries its Status. */}
+        <div className="tile"><div className="k">Closed</div><div className="v" style={{ color: 'var(--ink-3)' }}>
+          {t.closed ?? jobs.filter((j) => j['Status'] === 'Closed').length}
+        </div></div>
       </div>
 
       <div className="card">

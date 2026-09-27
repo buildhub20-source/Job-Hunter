@@ -6,7 +6,9 @@ import type { Job } from './types.js';
  */
 
 export async function fetchJobs(apiUrl: string, token: string): Promise<Job[]> {
-  const res = await fetch(`${apiUrl}?token=${encodeURIComponent(token)}`, {
+  // The timestamp defeats Google's own cache on the /exec URL: an identical GET can come
+  // back minutes stale, which once showed 410 jobs while the Sheet held 469.
+  const res = await fetch(`${apiUrl}?token=${encodeURIComponent(token)}&_=${Date.now()}`, {
     cache: 'no-store',
   });
   const text = await res.text();

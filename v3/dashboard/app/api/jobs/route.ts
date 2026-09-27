@@ -10,7 +10,10 @@ export async function GET() {
     return NextResponse.json({ error: 'SHEET_API_URL or SHEET_API_TOKEN is not set' }, { status: 500 });
   }
   try {
-    const res = await fetch(`${url}?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+    // `cache: no-store` only governs this fetch; Google caches the /exec response itself
+    // and will serve an identical GET back for minutes. A changing parameter is the only
+    // way past it — without this the dashboard can show a Sheet as it was, not as it is.
+    const res = await fetch(`${url}?token=${encodeURIComponent(token)}&_=${Date.now()}`, { cache: 'no-store' });
     const text = await res.text();
     // Apps Script answers with HTML on an auth problem, so fail loudly rather than
     // letting JSON.parse throw something unreadable.
